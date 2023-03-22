@@ -1,8 +1,8 @@
 defmodule Chatgpt.Openai do
   use GenServer
-  alias ExOpenAI.Components.ChatCompletionRequestMessage
-  alias ExOpenAI.Components.ChatCompletionResponseMessage
   alias ChatgptWeb.Message
+
+  @model Application.compile_env(:chatgpt, :model, "gpt-4")
 
   @impl true
   def init(_opts) do
@@ -17,26 +17,43 @@ defmodule Chatgpt.Openai do
     }
   end
 
+  @spec role(String.t()) :: atom()
   defp role(r) when is_binary(r), do: String.to_atom(r)
+  @spec role(atom()) :: atom()
   defp role(r) when is_atom(r), do: r
 
-  @spec to_domain(ChatCompletionRequestMessage.t()) :: Message.t()
+  @spec to_domain(ExOpenAI.Components.ChatCompletionResponseMessage.t()) :: Message.t()
   defp to_domain(msg) do
     %Message{
       content: msg.content,
       sender: role(msg.role),
-      id: "#{:rand.uniform(256) - 1}"
+      id: 0
     }
   end
 
   @impl true
-  def handle_call({:msg, m}, _from, msgs) do
+  def handle_call({:msg, m}, from, msgs) do
     with msgs <- msgs ++ [new_msg(m)] do
-      case ExOpenAI.Chat.create_chat_completion(msgs, "gpt-4") do
+      case ExOpenAI.Chat.create_chat_completion(msgs, @model) do
         {:ok, res} ->
           first = List.first(res.choices)
           combined = msgs ++ [first.message]
           {:reply, {:ok, to_domain(first.message)}, combined}
+
+        {:error, %{"error" => %{"message" => msg}}} ->
+          case(
+            # if this specific error, retry
+            String.contains?(
+              msg,
+              "The server had an error while processing your request. Sorry about that!"
+            )
+          ) do
+            true ->
+              handle_call({:msg, m}, from, msgs)
+
+            false ->
+              {:error, msg}
+          end
 
         {:error, reason} ->
           {:error, reason}

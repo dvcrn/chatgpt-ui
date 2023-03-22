@@ -18,9 +18,9 @@ defmodule ChatgptWeb.Router do
   scope "/", ChatgptWeb do
     pipe_through :browser
 
-    # 2 ways of rendering liveviews, by using 'live'
-    # or by having a controller rendering it
-    live "/", IndexLive, :index
+    get "/", PageController, :home
+
+    get "/auth/google/callback", PageController, :oauth_callback
   end
 
   # Other scopes may use custom stacks.

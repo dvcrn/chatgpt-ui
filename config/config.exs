@@ -7,6 +7,14 @@
 # General application configuration
 import Config
 
+config :chatgpt,
+  title: "MerGPT 3.5",
+  # or gpt-3.5-turbo
+  model: "gpt-3.5-turbo",
+  enable_google_oauth: true,
+  restrict_email_domains: true,
+  allowed_email_domains: ["google.com"]
+
 # Configures the endpoint
 config :chatgpt, ChatgptWeb.Endpoint,
   url: [host: "localhost"],
@@ -16,11 +24,6 @@ config :chatgpt, ChatgptWeb.Endpoint,
   ],
   pubsub_server: Chatgpt.PubSub,
   live_view: [signing_salt: "U3AoOojJ"]
-
-config :ex_openai,
-  api_key: System.get_env("OPENAI_API_KEY"),
-  organization_key: System.get_env("OPENAI_ORGANIZATION_KEY"),
-  http_options: [recv_timeout: 50_000]
 
 # Configure esbuild (the version is required)
 config :esbuild,

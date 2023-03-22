@@ -9,7 +9,13 @@ defmodule Chatgpt.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
-      deps: deps()
+      deps: deps(),
+      releases: [
+        chatgpt: [
+          include_executables_for: [:unix],
+          applications: [runtime_tools: :permanent]
+        ]
+      ]
     ]
   end
 
@@ -51,7 +57,12 @@ defmodule Chatgpt.MixProject do
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.5"},
       {:ex_openai, ">= 1.0.4"},
-      {:earmark, "~> 1.4.37"}
+      {:earmark, "~> 1.4.37"},
+      {:elixir_auth_google, "~> 1.6.5"},
+      {:httpoison, "~> 2.0.0", override: true},
+      {:cachex, "~> 3.6"},
+      {:elixir_uuid, "~> 1.2"},
+      {:dialyxir, "~> 1.0", only: [:dev], runtime: false}
     ]
   end
 
