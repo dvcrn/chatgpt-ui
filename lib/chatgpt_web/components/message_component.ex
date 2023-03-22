@@ -1,23 +1,33 @@
 defmodule ChatgptWeb.MessageComponent do
   use ChatgptWeb, :live_component
 
-  defp style(:assistant), do: "bg-[#F7F7F8]"
-  defp style(_), do: "bg-white"
+  defp style(:assistant), do: "chat-start "
+  defp style(_), do: "chat-end"
+
+  defp bubble_style(:assistant), do: ""
+  defp bubble_style(_), do: "bg-[#3b82f6] "
 
   defp render_avatar(%{sender: :user} = assigns) do
     ~H"""
-    <div class="w-[30px] flex flex-col relative items-end bg-gray-300">
-      <div class="relative flex">
-        <span style="box-sizing: border-box; display: inline-block; overflow: hidden; background-image: none; opacity: 1; border: 0px; margin: 0px; padding: 0px; position: relative; max-width: 100%;">
-          <span style="box-sizing: border-box; display: block; background-image: none; opacity: 1; border: 0px; margin: 0px; padding: 0px; max-width: 100%;">
-            <img
-              style="display: block; max-width: 100%; background-image: none; opacity: 1; border: 0px; margin: 0px; padding: 0px;"
-              alt=""
-              aria-hidden="true"
-              src="data:image/svg+xml,%3csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20version=%271.1%27%20width=%2730%27%20height=%2730%27/%3e"
-            />
-          </span>
-        </span>
+    <div class="w-[30px] flex flex-col relative items-end">
+      <div
+        style="background-color: rgb(16, 163, 127);"
+        class="relative h-[30px] w-[30px] p-1 rounded-sm text-white flex items-center justify-center"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+          stroke="currentColor"
+          class="w-6 h-6"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z"
+          />
+        </svg>
       </div>
     </div>
     """
@@ -60,14 +70,14 @@ defmodule ChatgptWeb.MessageComponent do
     assigns = assign(assigns, :parsed_content, Earmark.as_html!(assigns.message))
 
     ~H"""
-    <div class={"border-b " <> style(@sender)}>
-      <div class="container mx-auto">
-        <div class="text-base gap-4 md:gap-6 md:max-w-2xl lg:max-w-2xl xl:max-w-3xl p-4 md:py-6 flex lg:px-0 m-auto">
-          <.render_avatar sender={@sender} />
-          <div class="relative flex w-[calc(100%-50px)] flex-col gap-1 md:gap-3 lg:w-[calc(100%-115px)]">
-            <%= raw(@parsed_content) %>
-          </div>
+    <div class={"chat #{style(@sender)}"}>
+      <div class="chat-image avatar">
+        <div class="w-10">
+          <%= render_avatar(assigns) %>
         </div>
+      </div>
+      <div class={"chat-bubble p-4 rounded #{bubble_style(@sender)}"}>
+        <%= raw(@parsed_content) %>
       </div>
     </div>
     """
