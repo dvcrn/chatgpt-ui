@@ -76,7 +76,7 @@ defmodule ChatgptWeb.MessageComponent do
           <%= render_avatar(assigns) %>
         </div>
       </div>
-      <div class={"chat-bubble space-y-4 p-4 mt-4 mb-4 rounded #{bubble_style(@sender)}"}>
+      <div class={"chat-bubble space-y-4 p-4 mb-4 rounded #{bubble_style(@sender)}"}>
         <%= raw(@parsed_content) %>
       </div>
     </div>
