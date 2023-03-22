@@ -8,7 +8,7 @@
 import Config
 
 config :chatgpt,
-  title: "MerGPT 3.5",
+  title: "Elixir ChatGPT",
   # or gpt-3.5-turbo
   model: "gpt-3.5-turbo",
   enable_google_oauth: true,
