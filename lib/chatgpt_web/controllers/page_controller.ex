@@ -27,7 +27,8 @@ defmodule ChatgptWeb.PageController do
 
   def oauth_callback(conn, %{"code" => code}) do
     with {:ok, token} <- ElixirAuthGoogle.get_token(code, conn),
-         {:ok, profile} <- ElixirAuthGoogle.get_user_profile(token.access_token),
+         %{access_token: access_token} <- token,
+         {:ok, profile} <- ElixirAuthGoogle.get_user_profile(access_token),
          %{email: email} <- profile,
          %{expires_in: expires_in} <- token,
          restrict_email_domains? <-

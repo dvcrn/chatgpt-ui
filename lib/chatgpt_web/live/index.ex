@@ -76,6 +76,7 @@ defmodule ChatgptWeb.IndexLive do
           IO.inspect(e)
 
           Process.send(self, {:set_error, "#{inspect(e)}"}, [])
+          Process.send(self, :stop_loading, [])
       end
     end)
 

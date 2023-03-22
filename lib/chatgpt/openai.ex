@@ -32,8 +32,8 @@ defmodule Chatgpt.Openai do
   end
 
   @impl true
-  def handle_call({:msg, m}, from, msgs) do
-    with msgs <- msgs ++ [new_msg(m)] do
+  def handle_call({:msg, m}, from, cur_msgs) do
+    with msgs <- cur_msgs ++ [new_msg(m)] do
       case ExOpenAI.Chat.create_chat_completion(msgs, @model) do
         {:ok, res} ->
           first = List.first(res.choices)
@@ -49,14 +49,14 @@ defmodule Chatgpt.Openai do
             )
           ) do
             true ->
-              handle_call({:msg, m}, from, msgs)
+              handle_call({:msg, m}, from, cur_msgs)
 
             false ->
-              {:error, msg}
+              {:reply, {:error, msg}, cur_msgs}
           end
 
         {:error, reason} ->
-          {:error, reason}
+          {:reply, {:error, reason}, cur_msgs}
       end
     end
   end
@@ -66,6 +66,6 @@ defmodule Chatgpt.Openai do
   end
 
   def send(pid, msg) do
-    GenServer.call(pid, {:msg, msg}, 50000)
+    GenServer.call(pid, {:msg, msg}, 100_000)
   end
 end
