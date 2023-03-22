@@ -29,7 +29,7 @@ defmodule ChatgptWeb.TextboxComponent do
       id={@field.id}
       name={@field.name}
       phx-target={@myself}
-      onkeydown="if(event.keyCode == 13) {
+      onkeydown="if(event.keyCode == 13 && event.shiftKey == false) {
     			document.getElementById('submitbtn').click();
     		 return false;}"
       }
