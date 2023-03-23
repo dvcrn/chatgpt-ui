@@ -28,8 +28,8 @@ config :ex_openai,
   http_options: [recv_timeout: 30_000]
 
 config :elixir_auth_google,
-  client_id: get_or_raise.("GOOGLE_AUTH_CLIENT_ID"),
-  client_secret: get_or_raise.("GOOGLE_AUTH_CLIENT_SECRET")
+  client_id: System.get_env("GOOGLE_AUTH_CLIENT_ID"),
+  client_secret: System.get_env("GOOGLE_AUTH_CLIENT_SECRET")
 
 if config_env() == :prod do
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
