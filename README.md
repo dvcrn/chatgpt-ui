@@ -21,6 +21,8 @@ Some companies want to offer ChatGPT internally to their employees, but without 
 - Restrict access to certain email domains
 - Set which model to use
 - Code highlighting with [highlightjs](https://highlightjs.org/)
+- Streaming messages support
+- Dark Mode
 
 ## Configuration
 
