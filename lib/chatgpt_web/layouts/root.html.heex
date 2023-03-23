@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" style="scrollbar-gutter: stable;">
+<html lang="en" style="scrollbar-gutter: stable;" class="bg-[#F7F7F7] dark:bg-slate-800">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -11,7 +11,7 @@
     <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
     </script>
   </head>
-  <body class="bg-[#F7F7F7] dark:bg-slate-800 h-screen">
+  <body class="bg-[#F7F7F7] dark:bg-slate-800">
 		<header class="navbar bg-base-100">
 		  <a href="/" class="btn btn-ghost normal-case text-xl">
 		    <%= assigns[:page_title] || Application.get_env(:chatgpt, :title) %>

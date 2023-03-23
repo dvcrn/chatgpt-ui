@@ -4,7 +4,9 @@ defmodule ChatgptWeb.IndexLive do
   alias ChatgptWeb.AlertComponent
   use ChatgptWeb, :live_view
 
-  @type state :: %{messages: [Message.t()], loading: boolean()}
+  use ExOpenAI.StreamingClient
+
+  @type state :: %{messages: [Message.t()], loading: boolean(), streaming_message: Message.t()}
 
   @spec dummy_messages() :: [Message.t()]
   defp dummy_messages,
@@ -13,7 +15,12 @@ defmodule ChatgptWeb.IndexLive do
     ]
 
   @spec initial_state() :: state
-  defp initial_state, do: %{messages: dummy_messages(), loading: false}
+  defp initial_state,
+    do: %{
+      messages: dummy_messages(),
+      loading: false,
+      streaming_message: %Message{content: "", sender: :assistant, id: -1}
+    }
 
   def mount(_params, _session, socket) do
     {:ok, pid} = Chatgpt.Openai.start_link([])
@@ -23,6 +30,54 @@ defmodule ChatgptWeb.IndexLive do
      |> assign(%{openai_pid: pid})
      |> assign(initial_state())}
   end
+
+  # -- sse client
+
+  @spec parse_choices(any) :: String.t()
+  defp parse_choices(%{delta: %{content: content}}) do
+    content
+  end
+
+  defp parse_choices(choices) when is_list(choices) do
+    List.first(choices)
+    |> parse_choices()
+  end
+
+  defp parse_choices(_) do
+    ""
+  end
+
+  def handle_data(%{id: _id, choices: choices}, state) do
+    streamed_text = parse_choices(choices)
+
+    streaming_message =
+      state.assigns.streaming_message
+      |> Map.put(:content, state.assigns.streaming_message.content <> streamed_text)
+
+    {:noreply,
+     state
+     |> assign(streaming_message: streaming_message)}
+  end
+
+  def handle_error(e, state) do
+    IO.puts("got error: #{inspect(e)}")
+    Process.send(self(), {:set_error, "#{inspect(e)}"}, [])
+
+    {:noreply, state}
+  end
+
+  def handle_finish(state) do
+    # swap streaming message into a real message
+    Process.send(
+      self(),
+      {:commit_streaming_message, state.assigns.streaming_message},
+      []
+    )
+
+    {:noreply, state}
+  end
+
+  # -- sse client
 
   def handle_info({:set_error, msg}, socket) do
     {:noreply,
@@ -48,6 +103,24 @@ defmodule ChatgptWeb.IndexLive do
      |> push_event("newmessage", %{})}
   end
 
+  def handle_info({:commit_streaming_message, msg}, socket) do
+    new_id = Enum.count(socket.assigns.messages) + 1
+    msg = Map.put(msg, :id, new_id)
+
+    # insert into stateful openai container so we have history
+    Chatgpt.Openai.insert_message(socket.assigns.openai_pid, msg)
+
+    Process.send(self(), :stop_loading, [])
+
+    {:noreply,
+     socket
+     |> assign(%{
+       messages: socket.assigns.messages ++ [msg],
+       streaming_message: %Message{content: "", sender: :assistant, id: -1}
+     })
+     |> push_event("newmessage", %{})}
+  end
+
   def handle_info({:update_messages, msgs}, socket) do
     {:noreply, assign(socket, %{messages: msgs})}
   end
@@ -65,8 +138,15 @@ defmodule ChatgptWeb.IndexLive do
       []
     )
 
+    # {:ok, streamer} = Chatgpt.SseClient.start_link(nil)
+
+    IO.puts("streamer: #{inspect(self)}")
+
     spawn(fn ->
-      case Chatgpt.Openai.send(socket.assigns.openai_pid, text) do
+      case Chatgpt.Openai.send(socket.assigns.openai_pid, text, self) do
+        {:ok, result} when is_reference(result) ->
+          nil
+
         {:ok, result} ->
           Process.send(self, {:add_message, result}, [])
           Process.send(self, :stop_loading, [])
@@ -89,7 +169,7 @@ defmodule ChatgptWeb.IndexLive do
       <div class="mb-64 overflow-hidden">
         <.live_component
           module={ChatgptWeb.MessageListComponent}
-          messages={assigns.messages}
+          messages={assigns.messages ++ [assigns.streaming_message]}
           id="myid"
         />
 

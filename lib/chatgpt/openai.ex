@@ -31,10 +31,31 @@ defmodule Chatgpt.Openai do
     }
   end
 
+  @spec from_domain(Message.t()) :: ExOpenAI.Components.ChatCompletionRequestMessage.t()
+  defp from_domain(msg) do
+    %ExOpenAI.Components.ChatCompletionRequestMessage{
+      content: msg.content,
+      role: role(msg.sender)
+    }
+  end
+
   @impl true
-  def handle_call({:msg, m}, from, cur_msgs) do
+  def handle_call({:insertmsg, m}, _from, cur_msgs) do
+    new_msg = from_domain(m)
+    {:reply, new_msg, cur_msgs ++ [new_msg]}
+  end
+
+  @impl true
+  def handle_call({:msg, m, streamer_pid} = params, from, cur_msgs) do
     with msgs <- cur_msgs ++ [new_msg(m)] do
-      case ExOpenAI.Chat.create_chat_completion(msgs, @model) do
+      case ExOpenAI.Chat.create_chat_completion(msgs, @model,
+             temperature: 0.8,
+             stream: true,
+             stream_to: streamer_pid
+           ) do
+        {:ok, res} when is_reference(res) ->
+          {:reply, {:ok, res}, msgs}
+
         {:ok, res} ->
           first = List.first(res.choices)
           combined = msgs ++ [first.message]
@@ -49,7 +70,7 @@ defmodule Chatgpt.Openai do
             )
           ) do
             true ->
-              handle_call({:msg, m}, from, cur_msgs)
+              handle_call(params, from, cur_msgs)
 
             false ->
               {:reply, {:error, msg}, cur_msgs}
@@ -65,7 +86,11 @@ defmodule Chatgpt.Openai do
     GenServer.start_link(__MODULE__, [], opts)
   end
 
-  def send(pid, msg) do
-    GenServer.call(pid, {:msg, msg}, 100_000)
+  def send(pid, msg, streamer_pid) do
+    GenServer.call(pid, {:msg, msg, streamer_pid}, 100_000)
+  end
+
+  def insert_message(pid, msg) do
+    GenServer.call(pid, {:insertmsg, msg}, 100_000)
   end
 end

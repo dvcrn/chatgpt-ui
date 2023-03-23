@@ -25,7 +25,7 @@ end
 config :ex_openai,
   api_key: get_or_raise.("OPENAI_API_KEY"),
   organization_key: get_or_raise.("OPENAI_ORGANIZATION_KEY"),
-  http_options: [recv_timeout: 100_000]
+  http_options: [recv_timeout: 30_000]
 
 config :elixir_auth_google,
   client_id: get_or_raise.("GOOGLE_AUTH_CLIENT_ID"),
