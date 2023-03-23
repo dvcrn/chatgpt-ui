@@ -10,16 +10,27 @@ defmodule ChatgptWeb.TextboxComponent do
   end
 
   def handle_event("onsubmit", %{"main" => %{"text" => text}}, socket) do
-    socket.assigns.on_submit.(text)
-    {:noreply, socket |> assign(form: new_form())}
+    if String.length(text) >= 2 and socket.assigns.disabled == false do
+      socket.assigns.on_submit.(text)
+      {:noreply, socket |> assign(form: new_form())}
+    else
+      {:noreply, socket}
+    end
   end
 
   attr :field, Phoenix.HTML.FormField
   attr :text, :string
   attr :myself, :any
-  attr :rest, :global
+  attr :disabled, :boolean
 
   def textarea(assigns) do
+    assigns =
+      assign(assigns, :onkeydown, """
+      if(event.keyCode == 13 && event.shiftKey == false) {
+      		document.getElementById('submitbtn').click();
+      	 return false;}
+      """)
+
     ~H"""
     <textarea
       tabindex="0"
@@ -29,11 +40,7 @@ defmodule ChatgptWeb.TextboxComponent do
       id={@field.id}
       name={@field.name}
       phx-target={@myself}
-      onkeydown="if(event.keyCode == 13 && event.shiftKey == false) {
-    			document.getElementById('submitbtn').click();
-    		 return false;}"
-      }
-      {@rest}
+      onkeydown={@onkeydown}
     ><%= @field.value %></textarea>
     """
   end
