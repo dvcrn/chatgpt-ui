@@ -9,7 +9,7 @@ defmodule ChatgptWeb.IndexLive do
   @spec dummy_messages() :: [Message.t()]
   defp dummy_messages,
     do: [
-      %Message{content: "Hi there! Ask me something :)", sender: :assistant, id: 0}
+      %Message{content: "Hi there! How can I assist you today?", sender: :assistant, id: 0}
     ]
 
   @spec initial_state() :: state

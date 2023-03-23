@@ -7,7 +7,7 @@ defmodule ChatgptWeb.MessageListComponent do
 
   def render(assigns) do
     ~H"""
-    <div class="relative h-full w-full transition-width flex flex-col overflow-hidden items-stretch flex-1">
+    <div class="my-4 relative h-full w-full transition-width flex flex-col overflow-hidden items-stretch flex-1">
       <%= for message <- @messages do %>
         <.live_component
           module={MessageComponent}

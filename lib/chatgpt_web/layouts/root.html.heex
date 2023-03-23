@@ -11,15 +11,13 @@
     <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
     </script>
   </head>
-  <body class="">
-    <header class="bg-white p-2">
-      <div class="container mx-auto">
-        <h1 class="text-xl">
-          <%= assigns[:page_title] || Application.get_env(:chatgpt, :title) %>
-        </h1>
-      </div>
-    </header>
-    <div class="container mx-auto">
+  <body class="bg-[#F7F7F7] dark:bg-slate-800 h-screen">
+		<header class="navbar bg-base-100">
+		  <a href="/" class="btn btn-ghost normal-case text-xl">
+		    <%= assigns[:page_title] || Application.get_env(:chatgpt, :title) %>
+		  </a>
+		</header>
+    <div class="container mx-auto bg-[#F7F7F7] dark:bg-slate-800">
       <%= @inner_content %>
     </div>
   </body>

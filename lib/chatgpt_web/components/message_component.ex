@@ -5,7 +5,24 @@ defmodule ChatgptWeb.MessageComponent do
   defp style(_), do: "chat-end"
 
   defp bubble_style(:assistant), do: ""
-  defp bubble_style(_), do: "bg-[#3b82f6] "
+  defp bubble_style(_), do: "bg-[#FFF] text-[#333] dark:text-slate-400 dark:bg-gray-700"
+
+  defp process_markdown(markdown) do
+    # add list style
+    add_list_disc_class = &Earmark.AstTools.merge_atts_in_node(&1, class: "list-disc ml-4")
+    add_rounded_class = &Earmark.AstTools.merge_atts_in_node(&1, class: "rounded")
+
+    tsp =
+      Earmark.TagSpecificProcessors.new([
+        {"ul", add_list_disc_class},
+        {"ol", add_list_disc_class},
+        {"code", add_rounded_class}
+      ])
+
+    m = Earmark.Options.make_options!(registered_processors: [tsp])
+
+    Earmark.as_html!(markdown, m)
+  end
 
   defp render_avatar(%{sender: :user} = assigns) do
     ~H"""
@@ -67,7 +84,7 @@ defmodule ChatgptWeb.MessageComponent do
   defp parse_content(content), do: content
 
   def render(assigns) do
-    assigns = assign(assigns, :parsed_content, Earmark.as_html!(assigns.message))
+    assigns = assign(assigns, :parsed_content, process_markdown(assigns.message))
 
     ~H"""
     <div class={"chat #{style(@sender)}"}>
@@ -76,7 +93,7 @@ defmodule ChatgptWeb.MessageComponent do
           <%= render_avatar(assigns) %>
         </div>
       </div>
-      <div class={"chat-bubble space-y-4 p-4 mb-4 rounded #{bubble_style(@sender)}"}>
+      <div class={"chat-bubble shadow-[0_0_10px_rgba(0,0,0,0.10)] dark:shadow-[0_0_15px_rgba(0,0,0,0.10)] space-y-4 p-4 mb-4 rounded  w-full #{bubble_style(@sender)}"}>
         <%= raw(@parsed_content) %>
       </div>
     </div>
