@@ -138,10 +138,6 @@ defmodule ChatgptWeb.IndexLive do
       []
     )
 
-    # {:ok, streamer} = Chatgpt.SseClient.start_link(nil)
-
-    IO.puts("streamer: #{inspect(self)}")
-
     spawn(fn ->
       case Chatgpt.Openai.send(socket.assigns.openai_pid, text, self) do
         {:ok, result} when is_reference(result) ->
