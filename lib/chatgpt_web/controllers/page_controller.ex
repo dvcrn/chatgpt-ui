@@ -1,14 +1,14 @@
 defmodule ChatgptWeb.PageController do
   use ChatgptWeb, :controller
 
-  defp protect_with_session(conn, _params) do
+  defp protect_with_session(conn, _params, fx) do
     case get_session(conn) do
       %{"oauth_google_token" => _token, "oauth_expiration" => expiration} ->
         if DateTime.compare(DateTime.now!("Etc/UTC"), expiration) == :gt do
           oauth_google_url = ElixirAuthGoogle.generate_oauth_url(conn)
           redirect(conn, external: oauth_google_url)
         else
-          live_render(conn, ChatgptWeb.IndexLive)
+          fx.()
         end
 
       _ ->
@@ -18,10 +18,40 @@ defmodule ChatgptWeb.PageController do
   end
 
   def home(conn, params) do
+    default_model = Application.get_env(:chatgpt, :model, "gpt-3.5-turbo")
+
+    session_model =
+      case get_session(conn) do
+        %{"model" => model} ->
+          model
+
+        _ ->
+          default_model
+      end
+
+    model =
+      case Map.get(params, "model", nil) do
+        nil -> session_model
+        m -> m
+      end
+
+    args = %{
+      "model" => model,
+      "enabled_models" => Application.get_env(:chatgpt, :enabled_models, [model])
+    }
+
+    conn = put_session(conn, "model", Map.get(params, "model", model))
+
     if Application.get_env(:chatgpt, :enable_google_oauth, false) do
-      protect_with_session(conn, params)
+      protect_with_session(
+        conn,
+        params,
+        fn ->
+          live_render(conn, ChatgptWeb.IndexLive, session: args)
+        end
+      )
     else
-      live_render(conn, ChatgptWeb.IndexLive)
+      live_render(conn, ChatgptWeb.IndexLive, session: args)
     end
   end
 

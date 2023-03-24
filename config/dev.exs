@@ -48,7 +48,8 @@ config :chatgpt, ChatgptWeb.Endpoint,
     patterns: [
       ~r"priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$",
       ~r"priv/gettext/.*(po)$",
-      ~r"lib/chatgpt_web/(controllers|live|components)/.*(ex|heex)$"
+      ~r"lib/chatgpt_web/(controllers|live|components)/.*(ex|heex)$",
+      ~r"lib/chatgpt/.*(ex|heex)$"
     ]
   ]
 

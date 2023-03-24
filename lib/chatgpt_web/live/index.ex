@@ -22,18 +22,29 @@ defmodule ChatgptWeb.IndexLive do
       streaming_message: %Message{content: "", sender: :assistant, id: -1}
     }
 
-  def mount(_params, _session, socket) do
+  def mount(_params, %{"model" => model, "enabled_models" => enabled_models}, socket) do
     {:ok, pid} = Chatgpt.Openai.start_link([])
 
     {:ok,
      socket
-     |> assign(%{openai_pid: pid})
+     |> assign(%{openai_pid: pid, model: model, enabled_models: enabled_models})
      |> assign(initial_state())}
+  end
+
+  def handle_event(ev, params, socket) do
+    IO.puts("handle event")
+    IO.inspect(ev)
+    IO.inspect(params)
+    IO.inspect(socket)
   end
 
   # -- sse client
 
   @spec parse_choices(any) :: String.t()
+  defp parse_choices(%{text: content}) do
+    content
+  end
+
   defp parse_choices(%{delta: %{content: content}}) do
     content
   end
@@ -62,6 +73,7 @@ defmodule ChatgptWeb.IndexLive do
   def handle_error(e, state) do
     IO.puts("got error: #{inspect(e)}")
     Process.send(self(), {:set_error, "#{inspect(e)}"}, [])
+    Process.send(self, :stop_loading, [])
 
     {:noreply, state}
   end
@@ -132,6 +144,8 @@ defmodule ChatgptWeb.IndexLive do
   def handle_info({:msg_submit, text}, socket) do
     self = self()
 
+    model = Map.get(socket.assigns, :model)
+
     Process.send(
       self,
       {:add_message, %Message{content: text, sender: :user, id: 0}},
@@ -139,7 +153,7 @@ defmodule ChatgptWeb.IndexLive do
     )
 
     spawn(fn ->
-      case Chatgpt.Openai.send(socket.assigns.openai_pid, text, self) do
+      case Chatgpt.Openai.send(socket.assigns.openai_pid, text, model, self) do
         {:ok, result} when is_reference(result) ->
           nil
 

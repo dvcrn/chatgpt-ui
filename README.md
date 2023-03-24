@@ -23,6 +23,7 @@ Some companies want to offer ChatGPT internally to their employees, but without 
 - Code highlighting with [highlightjs](https://highlightjs.org/)
 - Streaming messages support
 - Dark Mode
+- Ability to use "text-davinci-003" (GPT3), despite it not being a model for chatting
 
 ## Configuration
 

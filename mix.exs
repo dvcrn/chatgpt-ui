@@ -64,7 +64,8 @@ defmodule Chatgpt.MixProject do
       {:httpoison, "~> 2.0.0", override: true},
       {:cachex, "~> 3.6"},
       {:elixir_uuid, "~> 1.2"},
-      {:dialyxir, "~> 1.0", only: [:dev], runtime: false}
+      {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
+      {:tokenizers, "~> 0.3.0"}
     ]
   end
 

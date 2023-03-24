@@ -15,9 +15,10 @@ defmodule Chatgpt.Application do
       # Start Finch
       {Finch, name: Chatgpt.Finch},
       # Start the Endpoint (http/https)
-      ChatgptWeb.Endpoint
+      ChatgptWeb.Endpoint,
       # Start a worker by calling: Chatgpt.Worker.start_link(arg)
-      # {Chatgpt.Worker, arg}
+      # {Chatgpt.Worker, arg},
+      Chatgpt.Tokenizer
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
