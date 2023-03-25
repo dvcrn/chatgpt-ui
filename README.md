@@ -33,6 +33,7 @@ In config.exs, you can set the following keys:
 config :chatgpt,
   title: "Elixir ChatGPT",
   model: "gpt-4", # or gpt-3.5-turbo
+  enabled_models: ["gpt-4", "gpt-3.5-turbo", "davinci"], # 'davinci' enables usage of text-davinci-003
   enable_google_oauth: true,
   restrict_email_domains: false,
   allowed_email_domains: ["google.com"]
