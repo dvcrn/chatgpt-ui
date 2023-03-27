@@ -24,6 +24,7 @@ Some companies want to offer ChatGPT internally to their employees, but without 
 - Streaming messages support
 - Dark Mode
 - Ability to use "text-davinci-003" (GPT3), despite it not being a model for chatting
+- Automatic content truncating based on token count with [bert-base-multilingual-uncased](https://huggingface.co/bert-base-multilingual-uncased)
 
 ## Configuration
 
