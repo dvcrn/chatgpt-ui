@@ -2,7 +2,7 @@
 
 ChatGPT to host yourself, targeted at business-ey usecases that may be useful within a company, written in Elixir + LiveView
 
-![screenshot](demo.gif)
+![screenshot](screenshot.png)
 
 ## What is this?
 
@@ -74,6 +74,8 @@ config :elixir_auth_google,
 ```
 
 ## Scenarios
+
+![scenario](scenario.png)
 
 This UI decided to go with "scenarios" instead of the usual "recent conversations" approach of the official ChatGPT.
 
