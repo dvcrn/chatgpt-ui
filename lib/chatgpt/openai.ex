@@ -66,13 +66,26 @@ defmodule Chatgpt.Openai do
     Logger.info("completing with davinci")
 
     with msgs <- state.messages ++ [new_msg(m)] do
+      system_msgs =
+        msgs
+        |> Enum.filter(fn msg -> msg.role == :system end)
+        |> Enum.map(fn msg -> msg.content end)
+        |> Enum.join("\n")
+
+      system_prompt =
+        case String.length(system_msgs) do
+          0 -> ""
+          _ -> "Here are additional instructions that 'assistant' HAS TO follow: #{system_msgs}"
+        end
+
       default_prompt =
-        "This is a conversation between the 'user' and a helpful AI assistant called 'assistant'. Only those 2 users are in the conversation. Messages by user 'system' are admin messages, used to give new commands to 'assistant'. 'assistant' is also very knowledgeable in programming, and provides long replies that go into extensive detail, in a conversational matter. 'assistant' uses markdown in replies.\n\n"
+        "This is a conversation between the 'user' and a helpful AI assistant called 'assistant'. Only those 2 users are in the conversation. 'assistant' is also very knowledgeable in programming, and provides long replies that go into extensive detail, in a conversational matter. 'assistant' uses markdown in replies.\nThe conversation starts after '-----'\n#{system_prompt}\n-----\n\n"
 
       default_prompt_tokens = Chatgpt.Tokenizer.count_tokens!(default_prompt)
 
       prompt =
         msgs
+        |> Enum.filter(fn msg -> msg.role != :system end)
         |> Enum.map(fn msg -> "#{Atom.to_string(msg.role)}: #{msg.content}" end)
         # take the newest messages backwards until hitting the limit
         |> Enum.reverse()
