@@ -11,6 +11,22 @@ config :chatgpt,
   title: "Elixir ChatGPT",
   # or gpt-3.5-turbo
   model: "gpt-3.5-turbo",
+  enabled_models: ["gpt-3.5-turbo", "davinci"],
+  default_model: :"gpt-3.5-turbo",
+  models: [
+    # %{
+    #   id: :gpt4,
+    #   truncate_tokens: 8000
+    # },
+    %{
+      id: :"gpt-3.5-turbo",
+      truncate_tokens: 4000
+    },
+    %{
+      id: :davinci,
+      truncate_tokens: 2200
+    }
+  ],
   enable_google_oauth: true,
   restrict_email_domains: true,
   allowed_email_domains: ["google.com"]

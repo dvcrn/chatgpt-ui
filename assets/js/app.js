@@ -21,10 +21,13 @@ import "phoenix_html";
 import { Socket } from "phoenix";
 import { LiveSocket } from "phoenix_live_view";
 import topbar from "../vendor/topbar";
-import hljs from "highlight.js"
+import hljs from "highlight.js";
 
 function scrollToBottom() {
 	window.scrollTo(0, document.body.scrollHeight);
+	document
+		.querySelector(".drawer-content")
+		.scrollTo(0, document.body.scrollHeight);
 }
 
 let Hooks = {};

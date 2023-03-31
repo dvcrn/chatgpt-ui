@@ -17,8 +17,8 @@ defmodule ChatgptWeb.PageController do
     end
   end
 
-  def home(conn, params) do
-    default_model = Application.get_env(:chatgpt, :model, "gpt-3.5-turbo")
+  defp render_page(conn, params, args) do
+    default_model = Application.get_env(:chatgpt, :default_model, :"gpt-3.5-turbo")
 
     session_model =
       case get_session(conn) do
@@ -35,10 +35,15 @@ defmodule ChatgptWeb.PageController do
         m -> m
       end
 
-    args = %{
-      "model" => model,
-      "enabled_models" => Application.get_env(:chatgpt, :enabled_models, [model])
-    }
+    args =
+      Map.merge(
+        %{
+          "model" => model,
+          "models" => Application.get_env(:chatgpt, :models, [model]),
+          "scenarios" => ChatgptWeb.Scenario.default_scenarios()
+        },
+        args
+      )
 
     conn = put_session(conn, "model", Map.get(params, "model", model))
 
@@ -53,6 +58,18 @@ defmodule ChatgptWeb.PageController do
     else
       live_render(conn, ChatgptWeb.IndexLive, session: args)
     end
+  end
+
+  def chat(conn, params) do
+    render_page(conn, params, %{"mode" => :chat})
+  end
+
+  def scenario(conn, params) do
+    scenario =
+      ChatgptWeb.Scenario.default_scenarios()
+      |> Enum.find(fn sc -> sc.id == Map.get(params, "scenario_id", nil) end)
+
+    render_page(conn, params, %{} |> Map.put("mode", :scenario) |> Map.put("scenario", scenario))
   end
 
   def oauth_callback(conn, %{"code" => code}) do

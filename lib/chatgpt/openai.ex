@@ -3,9 +3,13 @@ defmodule Chatgpt.Openai do
   alias ChatgptWeb.Message
   require Logger
 
+  @type init_settings :: %{messages: [], keep_context: boolean()}
+  @type state :: %{messages: [], settings: init_settings()}
+
   @impl true
-  def init(_opts) do
-    {:ok, []}
+  @spec init(state) :: {:ok, any}
+  def init(opts) do
+    {:ok, opts}
   end
 
   defp new_msg(m) do
@@ -38,19 +42,32 @@ defmodule Chatgpt.Openai do
     }
   end
 
-  @impl true
-  def handle_call({:insertmsg, m}, _from, cur_msgs) do
-    new_msg = from_domain(m)
-    {:reply, new_msg, cur_msgs ++ [new_msg]}
+  @spec handle_state_update(state, state) :: state
+  defp handle_state_update(state, new_state) do
+    case Map.get(state, :keep_context, true) do
+      true ->
+        new_state
+
+      false ->
+        state
+    end
   end
 
   @impl true
-  def handle_call({:msg, m, streamer_pid, "davinci"} = params, from, cur_msgs) do
+  def handle_call({:insertmsg, m}, _from, state) do
+    new_msg = from_domain(m)
+
+    {:reply, new_msg,
+     handle_state_update(state, state |> Map.put(:messages, state.messages ++ [new_msg]))}
+  end
+
+  @impl true
+  def handle_call({:msg, m, streamer_pid, "davinci"} = params, from, state) do
     Logger.info("completing with davinci")
 
-    with msgs <- cur_msgs ++ [new_msg(m)] do
+    with msgs <- state.messages ++ [new_msg(m)] do
       default_prompt =
-        "This is a conversation between the 'user' and a helpful AI assistant called 'assistant'. Only those 2 users are in the conversation. 'assistant' is also very knowledgeable in programming, and provides long replies that go into extensive detail, in a conversational matter. 'assistant' uses markdown in replies.\n\n"
+        "This is a conversation between the 'user' and a helpful AI assistant called 'assistant'. Only those 2 users are in the conversation. Messages by user 'system' are admin messages, used to give new commands to 'assistant'. 'assistant' is also very knowledgeable in programming, and provides long replies that go into extensive detail, in a conversational matter. 'assistant' uses markdown in replies.\n\n"
 
       default_prompt_tokens = Chatgpt.Tokenizer.count_tokens!(default_prompt)
 
@@ -84,12 +101,14 @@ defmodule Chatgpt.Openai do
              max_tokens: 2048
            ) do
         {:ok, res} when is_reference(res) ->
-          {:reply, {:ok, res}, msgs}
+          {:reply, {:ok, res}, handle_state_update(state, state |> Map.put(:messages, msgs))}
 
         {:ok, res} ->
           first = List.first(res.choices)
           combined = msgs ++ [first.message]
-          {:reply, {:ok, to_domain(first.message)}, combined}
+
+          {:reply, {:ok, to_domain(first.message)},
+           handle_state_update(state, state |> Map.put(:messages, combined))}
 
         {:error, %{"error" => %{"message" => msg}}} ->
           case(
@@ -100,23 +119,27 @@ defmodule Chatgpt.Openai do
             )
           ) do
             true ->
-              handle_call(params, from, cur_msgs)
+              handle_call(params, from, state)
 
             false ->
-              {:reply, {:error, msg}, cur_msgs}
+              {:reply, {:error, msg}, state}
           end
 
         {:error, reason} ->
-          {:reply, {:error, reason}, cur_msgs}
+          {:reply, {:error, reason}, state}
       end
     end
   end
 
   @impl true
-  def handle_call({:msg, m, streamer_pid, model} = params, from, cur_msgs) do
+  @spec handle_call({:msg, String.t(), pid(), String.t()}, any(), state) ::
+          {:reply, {:ok, ExOpenAI.Components.ChatCompletionResponseMessage.t()} | {:error, any()},
+           state}
+          | {:reply, {:ok, reference()}, state}
+  def handle_call({:msg, m, streamer_pid, model} = params, from, state) do
     Logger.info("completing with #{model}")
 
-    with msgs <- cur_msgs ++ [new_msg(m)] do
+    with msgs <- state.messages ++ [new_msg(m)] do
       # strip out things that are over the token limit
       filtered_msgs =
         msgs
@@ -131,6 +154,7 @@ defmodule Chatgpt.Openai do
           end
         end)
 
+      Logger.debug(filtered_msgs |> Enum.reverse())
       Logger.debug("prompt size: #{filtered_msgs.tokens} tokens")
 
       filtered_msgs
@@ -142,13 +166,17 @@ defmodule Chatgpt.Openai do
         stream_to: streamer_pid
       )
       |> case do
+        # is reference == streaming
         {:ok, res} when is_reference(res) ->
-          {:reply, {:ok, res}, msgs}
+          {:reply, {:ok, res}, handle_state_update(state, state |> Map.put(:messages, msgs))}
 
+        # normal res = no streaming
         {:ok, res} ->
           first = List.first(res.choices)
           combined = msgs ++ [first.message]
-          {:reply, {:ok, to_domain(first.message)}, combined}
+
+          {:reply, {:ok, to_domain(first.message)},
+           handle_state_update(state, state |> Map.put(:messages, combined))}
 
         {:error, %{"error" => %{"message" => msg}}} ->
           case(
@@ -158,21 +186,26 @@ defmodule Chatgpt.Openai do
               "The server had an error while processing your request. Sorry about that!"
             )
           ) do
+            # if that specific error, recurse and try again
             true ->
-              handle_call(params, from, cur_msgs)
+              handle_call(params, from, state)
 
             false ->
-              {:reply, {:error, msg}, cur_msgs}
+              {:reply, {:error, msg}, state}
           end
 
         {:error, reason} ->
-          {:reply, {:error, reason}, cur_msgs}
+          {:reply, {:error, reason}, state}
       end
     end
   end
 
-  def start_link(opts) do
-    GenServer.start_link(__MODULE__, [], opts)
+  @spec start_link(init_settings) :: {:error, any} | {:ok, pid}
+  def start_link(init_settings) do
+    Logger.debug("starting OpenAI: #{inspect(init_settings)}")
+    msgs = Map.get(init_settings, :messages, []) |> Enum.map(&from_domain/1)
+
+    GenServer.start_link(__MODULE__, %{messages: msgs, settings: init_settings}, [])
   end
 
   def send(pid, msg, model, streamer_pid) do

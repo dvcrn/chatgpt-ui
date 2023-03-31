@@ -22,12 +22,44 @@ defmodule ChatgptWeb.IndexLive do
       streaming_message: %Message{content: "", sender: :assistant, id: -1}
     }
 
-  def mount(_params, %{"model" => model, "enabled_models" => enabled_models}, socket) do
-    {:ok, pid} = Chatgpt.Openai.start_link([])
+  def mount(
+        _params,
+        %{"model" => model, "models" => models, "mode" => :scenario, "scenario" => scenario} =
+          session,
+        socket
+      ) do
+    {:ok, pid} =
+      Chatgpt.Openai.start_link(%{
+        messages: scenario.messages,
+        keep_context: Map.get(scenario, "keep_context", false)
+      })
 
     {:ok,
      socket
-     |> assign(%{openai_pid: pid, model: model, enabled_models: enabled_models})
+     |> assign(initial_state())
+     |> assign(%{
+       openai_pid: pid,
+       model: model,
+       models: models,
+       scenarios: Map.get(session, "scenarios"),
+       scenario: scenario,
+       mode: :scenario,
+       messages: [%ChatgptWeb.Message{content: scenario.description, sender: :assistant, id: 0}]
+     })}
+  end
+
+  def mount(_params, %{"model" => model, "models" => models} = session, socket) do
+    {:ok, pid} = Chatgpt.Openai.start_link(%{})
+
+    {:ok,
+     socket
+     |> assign(%{
+       openai_pid: pid,
+       model: model,
+       models: models,
+       scenarios: Map.get(session, "scenarios"),
+       mode: :chat
+     })
      |> assign(initial_state())}
   end
 
@@ -175,8 +207,9 @@ defmodule ChatgptWeb.IndexLive do
 
   def render(assigns) do
     ~H"""
-    <div id="chatgpt">
-      <div class="mb-64 overflow-hidden">
+    <div id="chatgpt" class="flex" style="height: calc(100vh - 64px); flex-direction: column;">
+      <div class="mb-32" style="flex-grow: 1;">
+        <div>
         <.live_component
           module={ChatgptWeb.MessageListComponent}
           messages={assigns.messages ++ [assigns.streaming_message]}
@@ -194,8 +227,10 @@ defmodule ChatgptWeb.IndexLive do
             <LoadingIndicatorComponent.render />
           </div>
         <% end %>
+    	 </div>
       </div>
-      <div class="fixed bottom-0 left-0 w-full border-t md:border-t-0 dark:border-white/20 md:border-transparent md:dark:border-transparent md:bg-vert-light-gradient bg-white dark:bg-gray-800 md:!bg-transparent dark:md:bg-vert-dark-gradient pt-2">
+
+      <div class="sticky bottom-4 w-full border-t md:border-t-0 dark:border-white/20 md:border-transparent md:dark:border-transparent md:bg-vert-light-gradient bg-white dark:bg-gray-800 md:!bg-transparent dark:md:bg-vert-dark-gradient pt-2" >
         <.live_component
           on_submit={fn val -> Process.send(self(), {:msg_submit, val}, []) end}
           module={ChatgptWeb.TextboxComponent}

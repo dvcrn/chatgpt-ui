@@ -18,7 +18,9 @@ defmodule ChatgptWeb.Router do
   scope "/", ChatgptWeb do
     pipe_through :browser
 
-    get "/", PageController, :home
+    get "/", PageController, :chat
+    get "/chat", PageController, :chat
+    get "/scenario/:scenario_id", PageController, :scenario
 
     get "/auth/google/callback", PageController, :oauth_callback
   end

@@ -1,6 +1,6 @@
-# Selfhosted ChatGPT
+# ChatGPT UI
 
-ChatGPT to host yourself, written in Elixir + LiveView
+ChatGPT to host yourself, targeted at business-ey usecases that may be useful within a company, written in Elixir + LiveView
 
 ![screenshot](demo.gif)
 
@@ -16,6 +16,7 @@ Some companies want to offer ChatGPT internally to their employees, but without 
 
 ## Features
 
+- "Scenarios" for repetitive tasks you find yourself doing a lot
 - Use your own OpenAI API key
 - Google OAuth authentication
 - Restrict access to certain email domains
@@ -33,11 +34,25 @@ In config.exs, you can set the following keys:
 ```elixir
 config :chatgpt,
   title: "Elixir ChatGPT",
-  model: "gpt-4", # or gpt-3.5-turbo
-  enabled_models: ["gpt-4", "gpt-3.5-turbo", "davinci"], # 'davinci' enables usage of text-davinci-003
   enable_google_oauth: true,
   restrict_email_domains: false,
   allowed_email_domains: ["google.com"]
+
+  default_model: :"gpt-3.5-turbo",
+  models: [
+    %{
+      id: :gpt4,
+      truncate_tokens: 8000 # this key is not being used yet, but will be in a future version
+    },
+    %{
+      id: :"gpt-3.5-turbo",
+      truncate_tokens: 4000
+    },
+    %{
+      id: :davinci,
+      truncate_tokens: 2200
+    }
+  ],
 ```
 
 Then in `runtime.exs`:
@@ -58,13 +73,46 @@ config :elixir_auth_google,
   client_secret: System.get_env("GOOGLE_AUTH_CLIENT_SECRET")
 ```
 
+## Scenarios
+
+This UI decided to go with "scenarios" instead of the usual "recent conversations" approach of the official ChatGPT.
+
+"Scenarios" are preconfigured tasks that the AI should do, ready to be bookmarked and used whenever the task needs to be done. These can be things like:
+
+- Rewriting JIRA tickets
+- Grading user stories
+- Explaining code
+- Rephrasing based on corporate language
+
+Currently, scenarios are set in `scenario.ex` and follow the `%ChatgptWeb.Scenario` struct:
+
+```elixir
+      %{
+        id: "generate-userstory",
+        name: "📗 Generate Userstory",
+        description:
+          "Give me the content of a ticket, and I will try to write a user story for you!",
+        messages: [
+          %ChatgptWeb.Message{
+            content:
+              "You are an assistant that generates user stories for tickets. First, take the inputted text and give a summary if the entered text is a good userstory or not, with explanation why.\nThen, generate a proper user-story with the inputted text in the format of 'As a X, I want to Y, so that I can Z'.",
+            sender: :system
+          }
+        ],
+        keep_context: false
+      }
+```
+
+- messages are instructions to send to ChatGPT when the scenario is loaded, typically instructing the AI what it should do. Use `:system` messages to provide admin commands. The 3.5-turbo model is not paying so much attention to system messages, so experiment with using `:user` instead.
+- `keep_context` specifies whether the conversation context should be kept. If this is set to false (recommended), each message that is sent to the AI will be treated as a new conversation, the AI will have no context on previously sent messages.
+
 ## Usage
 
 Run with `mix phx.server`
 
 ## Usage / Deploying with Docker
 
-First of all, generate a new random keybase: `mix phx.gen.secret`. A default is set, but you should *really* change this before deploying.
+First of all, generate a new random keybase: `mix phx.gen.secret`. A default is set, but you should _really_ change this before deploying.
 
 ```
 docker build . -t chatgpt
@@ -78,6 +126,9 @@ The container (by default) expects the following env vars (unless you changed it
 - SECRET_KEY_BASE
 - OPENAI_API_KEY
 - OPENAI_ORGANIZATION_KEY
+
+And if you use google:
+
 - GOOGLE_AUTH_CLIENT_ID
 - GOOGLE_AUTH_CLIENT_SECRET
 
