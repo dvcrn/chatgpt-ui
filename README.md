@@ -119,8 +119,11 @@ First, install Elixir 1.14 or higher (1.13 or lower will not work).  Then:
 git clone https://github.com/dvcrn/chatgpt-ui
 cd chatgpt-ui
 
-# Install and build dependencies
+# Install Elixir
 mix deps.get
+
+# Install node dependencies
+yarn install      # or npm install
 mix assets.setup
 mix assets.build
 
