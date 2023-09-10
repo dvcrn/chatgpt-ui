@@ -12,12 +12,12 @@ config :chatgpt,
   # or gpt-3.5-turbo
   model: "gpt-3.5-turbo",
   enabled_models: ["gpt-3.5-turbo", "davinci"],
-  default_model: :"gpt-3.5-turbo",
+  default_model: :"gpt-4",
   models: [
-    # %{
-    #   id: :gpt4,
-    #   truncate_tokens: 8000
-    # },
+    %{
+      id: :"gpt-4",
+      truncate_tokens: 8000
+    },
     %{
       id: :"gpt-3.5-turbo",
       truncate_tokens: 4000
@@ -25,6 +25,10 @@ config :chatgpt,
     %{
       id: :davinci,
       truncate_tokens: 2200
+    },
+    %{
+      id: :"gpt-3.5-turbo-16k",
+      truncate_tokens: 15000
     }
   ],
   enable_google_oauth: true,

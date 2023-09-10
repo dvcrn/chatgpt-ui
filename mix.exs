@@ -56,7 +56,7 @@ defmodule Chatgpt.MixProject do
       {:gettext, "~> 0.20"},
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.5"},
-      # {:ex_openai, ">= 1.0.4"},
+      {:ex_openai, ">=  1.2.1"},
       # {:ex_openai, path: "/Users/david.mohl/syncsrc/openai.ex"},
       {:ex_openai, github: "dvcrn/ex_openai", branch: "main"},
       {:earmark, "~> 1.4.37"},
