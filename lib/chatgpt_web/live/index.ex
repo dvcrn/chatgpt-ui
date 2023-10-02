@@ -105,7 +105,7 @@ defmodule ChatgptWeb.IndexLive do
   def handle_error(e, state) do
     IO.puts("got error: #{inspect(e)}")
     Process.send(self(), {:set_error, "#{inspect(e)}"}, [])
-    Process.send(self, :stop_loading, [])
+    Process.send(self(), :stop_loading, [])
 
     {:noreply, state}
   end
