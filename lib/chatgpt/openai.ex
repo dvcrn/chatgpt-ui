@@ -34,12 +34,33 @@ defmodule Chatgpt.Openai do
     }
   end
 
-  @spec from_domain(Message.t()) :: ExOpenAI.Components.ChatCompletionRequestMessage.t()
+  @spec from_domain(Message.t()) ::
+          ExOpenAI.Components.ChatCompletionRequestUserMessage.t()
+          | ExOpenAI.Components.ChatCompletionRequestAssistantMessage.t()
+          | ExOpenAI.Components.ChatCompletionRequestSystemMessage.t()
   defp from_domain(msg) do
-    %ExOpenAI.Components.ChatCompletionRequestMessage{
-      content: msg.content,
-      role: role(msg.sender)
-    }
+    case msg.sender do
+      :user ->
+        %ExOpenAI.Components.ChatCompletionRequestUserMessage{
+          content: msg.content,
+          role: :user
+        }
+
+      :assistant ->
+        %ExOpenAI.Components.ChatCompletionRequestAssistantMessage{
+          content: msg.content,
+          role: :assistant
+        }
+
+      :system ->
+        %ExOpenAI.Components.ChatCompletionRequestSystemMessage{
+          content: msg.content,
+          role: :system
+        }
+
+      _ ->
+        raise ArgumentError, message: "Invalid sender role: #{inspect(msg.sender)}"
+    end
   end
 
   @spec handle_state_update(state, state) :: state
