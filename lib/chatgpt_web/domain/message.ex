@@ -3,7 +3,7 @@ defmodule ChatgptWeb.Message do
   @enforce_keys [:sender, :content]
 
   @type t :: %__MODULE__{
-          sender: :assistant | :user,
+          sender: :user | :assistant | :system,
           content: String.t(),
           id: integer()
         }
