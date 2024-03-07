@@ -18,7 +18,8 @@ defmodule Chatgpt.Application do
       ChatgptWeb.Endpoint,
       # Start a worker by calling: Chatgpt.Worker.start_link(arg)
       # {Chatgpt.Worker, arg},
-      Chatgpt.Tokenizer
+      Chatgpt.Tokenizer,
+      Chatgpt.MessageStore
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

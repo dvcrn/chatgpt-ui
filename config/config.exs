@@ -10,25 +10,37 @@ import Config
 config :chatgpt,
   title: "Elixir ChatGPT",
   # or gpt-3.5-turbo
-  model: "gpt-3.5-turbo",
-  enabled_models: ["gpt-3.5-turbo", "davinci"],
   default_model: :"gpt-4",
   models: [
     %{
+      id: :"claude-3-opus-20240229",
+      provider: :anthropic,
+      truncate_tokens: 100_000,
+      name: "Claude 3 Opus"
+    },
+    %{
       id: :"gpt-4",
-      truncate_tokens: 8000
+      provider: :openai,
+      truncate_tokens: 8000,
+      name: "GPT4"
     },
     %{
       id: :"gpt-3.5-turbo",
-      truncate_tokens: 4000
-    },
-    %{
-      id: :davinci,
-      truncate_tokens: 2200
+      provider: :openai,
+      truncate_tokens: 4000,
+      name: "GPT3.5 Turbo"
     },
     %{
       id: :"gpt-3.5-turbo-16k",
-      truncate_tokens: 15000
+      provider: :openai,
+      truncate_tokens: 15000,
+      name: "GPT3.5 Turbo 16k"
+    },
+    %{
+      id: :"gpt-4-32k",
+      provider: :openai,
+      truncate_tokens: 30000,
+      name: "GPT4 32k (EXPENSIVE!)"
     }
   ],
   enable_google_oauth: true,

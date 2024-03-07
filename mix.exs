@@ -40,7 +40,7 @@ defmodule Chatgpt.MixProject do
     [
       {:phoenix, "~> 1.7.1"},
       {:phoenix_ecto, "~> 4.4"},
-      {:ecto_sql, "~> 3.6"},
+      {:ecto_sql, "~> 3.10"},
       {:postgrex, ">= 0.0.0"},
       {:phoenix_html, "~> 3.3"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
@@ -50,22 +50,24 @@ defmodule Chatgpt.MixProject do
       {:esbuild, "~> 0.5", runtime: Mix.env() == :dev},
       {:tailwind, "~> 0.1.8", runtime: Mix.env() == :dev},
       {:swoosh, "~> 1.3"},
-      {:finch, "~> 0.13"},
       {:telemetry_metrics, "~> 0.6"},
       {:telemetry_poller, "~> 1.0"},
       {:gettext, "~> 0.20"},
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.5"},
-      {:ex_openai, ">=  1.2.1"},
+      {:ex_openai, ">=  1.5.0"},
       # {:ex_openai, path: "/Users/david.mohl/syncsrc/openai.ex"},
-      {:ex_openai, github: "dvcrn/ex_openai", branch: "main"},
+      # {:ex_openai, github: "dvcrn/ex_openai", branch: "main"},
       {:earmark, "~> 1.4.37"},
       {:elixir_auth_google, "~> 1.6.5"},
       {:httpoison, "~> 2.0.0", override: true},
       {:cachex, "~> 3.6"},
       {:elixir_uuid, "~> 1.2"},
       {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
-      {:tokenizers, "~> 0.3.0"}
+      {:tokenizers, "~> 0.3.0"},
+      {:aws, git: "https://github.com/aws-beam/aws-elixir.git"},
+      {:hackney, "~> 1.18"},
+      {:finch, "~> 0.13.0"}
     ]
   end
 

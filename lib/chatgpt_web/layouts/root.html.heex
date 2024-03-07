@@ -42,8 +42,8 @@
                     </svg>
                   </a>
                   <ul class="p-2 z-10 bg-base-100">
-                    <%= for model <- Enum.map(assigns[:models], & &1.id) do %>
-                      <li><.link navigate={URI.parse(assigns.conn.request_path) |> URI.append_query("model=#{model}") |> URI.to_string}><%= model %></.link></li>
+                    <%= for {model, name} <- Enum.map(assigns[:models], & {&1.id, &1.name}) do %>
+                      <li><.link navigate={URI.parse(assigns.conn.request_path) |> URI.append_query("model=#{model}") |> URI.to_string}><%= name %></.link></li>
                     <% end %>
                   </ul>
                 </li>
