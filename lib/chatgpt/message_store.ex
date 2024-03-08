@@ -15,7 +15,6 @@ defmodule Chatgpt.MessageStore do
   @spec add_message(pid, %Chatgpt.Message{}) :: :ok
   def add_message(pid, message) do
     next_id = get_next_id(pid)
-    Logger.info("Adding message to store: #{inspect(message)}")
     Agent.update(pid, fn messages -> [Map.put(message, :id, next_id) | messages] end)
   end
 
