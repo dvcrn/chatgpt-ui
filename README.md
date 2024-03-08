@@ -16,6 +16,7 @@ Some companies want to offer ChatGPT internally to their employees, but without 
 
 ## Features
 
+- Support for OpenAI GPT4 and Anthropic Claude models (through bedrock)
 - "Scenarios" for repetitive tasks you find yourself doing a lot
 - Use your own OpenAI API key
 - Google OAuth authentication
@@ -24,7 +25,6 @@ Some companies want to offer ChatGPT internally to their employees, but without 
 - Code highlighting with [highlightjs](https://highlightjs.org/)
 - Streaming messages support
 - Dark Mode
-- Ability to use "text-davinci-003" (GPT3), despite it not being a model for chatting
 - Automatic content truncating based on token count with [bert-base-multilingual-uncased](https://huggingface.co/bert-base-multilingual-uncased)
 
 ## Configuration
@@ -38,19 +38,31 @@ config :chatgpt,
   restrict_email_domains: false,
   allowed_email_domains: ["google.com"]
 
-  default_model: :"gpt-3.5-turbo",
+  default_model: :"gpt-4",
   models: [
     %{
-      id: :gpt4,
-      truncate_tokens: 8000 # this key is not being used yet, but will be in a future version
+      id: :"anthropic.claude-3-sonnet-20240229-v1:0",
+      provider: :anthropic,
+      truncate_tokens: 100_000,
+      name: "Claude 3 Sonnet"
     },
     %{
-      id: :"gpt-3.5-turbo",
-      truncate_tokens: 4000
+      id: :"gpt-4",
+      provider: :openai,
+      truncate_tokens: 8000,
+      name: "GPT4"
     },
     %{
-      id: :davinci,
-      truncate_tokens: 2200
+      id: :"gpt-3.5-turbo-16k",
+      provider: :openai,
+      truncate_tokens: 15000,
+      name: "GPT3.5 Turbo 16k"
+    },
+    %{
+      id: :"gpt-4-32k",
+      provider: :openai,
+      truncate_tokens: 30000,
+      name: "GPT4 32k (EXPENSIVE!)"
     }
   ],
 ```
@@ -71,7 +83,14 @@ config :ex_openai,
 config :elixir_auth_google,
   client_id: System.get_env("GOOGLE_AUTH_CLIENT_ID"),
   client_secret: System.get_env("GOOGLE_AUTH_CLIENT_SECRET")
+
+# if you want to use AWS Bedrock for Anthropic models
+config :chatgpt,
+  access_key_id: System.get_env("AWS_ACCESS_KEY_ID"),
+  secret_access_key: System.get_env("AWS_SECRET_ACCESS_KEY"),
+  region: System.get_env("AWS_REGION")
 ```
+
 
 ## Scenarios
 
