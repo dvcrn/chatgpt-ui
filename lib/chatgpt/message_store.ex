@@ -3,26 +3,26 @@ defmodule Chatgpt.MessageStore do
   require Logger
 
   def start_link(_) do
-    Agent.start_link(fn -> [] end, name: __MODULE__)
+    Agent.start_link(fn -> [] end)
   end
 
-  @spec add_message(%Chatgpt.Message{}) :: :ok
-  def add_message(message) do
+  @spec add_message(pid, %Chatgpt.Message{}) :: :ok
+  def add_message(pid, message) do
     Logger.info("Adding message to store: #{inspect(message)}")
-    Agent.update(__MODULE__, fn messages -> [message | messages] end)
+    Agent.update(pid, fn messages -> [message | messages] end)
   end
 
-  @spec get_messages() :: [%Chatgpt.Message{}]
-  def get_messages do
-    Agent.get(__MODULE__, fn messages -> Enum.reverse(messages) end)
+  @spec get_messages(pid) :: [%Chatgpt.Message{}]
+  def get_messages(pid) do
+    Agent.get(pid, fn messages -> Enum.reverse(messages) end)
   end
 
-  def get_recent_messages(x) do
-    Agent.get(__MODULE__, fn messages -> Enum.take(Enum.reverse(messages), x) end)
+  def get_recent_messages(pid, x) do
+    Agent.get(pid, fn messages -> Enum.take(Enum.reverse(messages), x) end)
   end
 
-  @spec get_next_id() :: integer()
-  def get_next_id do
-    Agent.get(__MODULE__, fn messages -> length(messages) end) + 1
+  @spec get_next_id(pid) :: integer()
+  def get_next_id(pid) do
+    Agent.get(pid, fn messages -> length(messages) end) + 1
   end
 end
