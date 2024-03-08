@@ -24,10 +24,6 @@ defmodule Chatgpt.Anthropic do
   end
 
   defp client do
-    IO.inspect(Application.get_env(:chatgpt, :access_key_id, ""))
-    IO.inspect(Application.get_env(:chatgpt, :secret_access_key, ""))
-    IO.inspect(Application.get_env(:chatgpt, :region, ""))
-
     AWS.Client.create(
       Application.get_env(:chatgpt, :access_key_id, ""),
       Application.get_env(:chatgpt, :secret_access_key, ""),
@@ -81,35 +77,42 @@ defmodule Chatgpt.Anthropic do
     }
   end
 
+  def convert_message(%Chatgpt.Message{sender: :system} = msg) do
+    %Chatgpt.Anthropic.Message{
+      content: msg.content,
+      role: :system
+    }
+  end
+
+  defp get_system_message(messages) do
+    Enum.filter(messages, fn msg -> msg.role == :system end) |> List.first()
+  end
+
+  defp remove_system_messages(messages) do
+    Enum.filter(messages, fn msg -> msg.role != :system end)
+  end
+
   @spec do_complete([Chatgpt.Messages], String.t(), Chatgpt.LLM.chunk()) ::
           :ok | {:error, String.t()}
   def do_complete(messages, model, callback) do
     converted_msgs =
       Enum.map(messages, &convert_message/1)
-      |> IO.inspect()
+      # |> IO.inspect()
       |> fix_messages()
-      |> IO.inspect()
 
-    # prompt =
-    #   messages
-    #   |> Enum.map(fn
-    #     %{content: content, sender: :assistant} ->
-    #       nil
-    #       "Assistant: #{content}"
+    # |> IO.inspect()
 
-    #     %{content: content, sender: :user} ->
-    #       "Human: #{content}"
-    #   end)
-    #   |> Enum.join("\n\n")
-
-    # prompt = prompt <> "\n\nAssistant:"
+    system_msgs = get_system_message(converted_msgs)
+    converted_msgs = remove_system_messages(converted_msgs)
 
     streamhandler = fn
       {:status, status}, acc ->
-        IO.inspect("Download assets status: #{status}")
+        # IO.inspect("Download assets status: #{status}")
+        nil
 
       {:headers, headers}, acc ->
-        IO.inspect("Download assets headers: #{inspect(headers)}")
+        # IO.inspect("Download assets headers: #{inspect(headers)}")
+        nil
 
       {:data, data}, acc ->
         <<total_byte_length::binary-size(4), headers_byte_length::binary-size(4),
@@ -133,14 +136,15 @@ defmodule Chatgpt.Anthropic do
 
         decoded_payload =
           payload
-          |> IO.inspect()
+          # |> IO.inspect()
           |> Jason.decode!()
           |> Map.get("bytes")
-          |> IO.inspect()
+          # |> IO.inspect()
           |> Base.decode64!()
-          |> IO.inspect()
+          # |> IO.inspect()
           |> Jason.decode!()
-          |> IO.inspect()
+
+        # |> IO.inspect()
 
         case decoded_payload do
           %{"message" => %{"content" => completion, "stop_reason" => stop_reason}} ->
@@ -152,7 +156,7 @@ defmodule Chatgpt.Anthropic do
           # 	"type" => "content_block_delta"
           # }
           %{"delta" => %{"text" => text_delta}} ->
-            IO.inspect("got delta")
+            # IO.inspect("got delta")
             callback.({:data, text_delta})
 
           # %{
@@ -164,7 +168,8 @@ defmodule Chatgpt.Anthropic do
             callback.(:finish)
 
           _ ->
-            IO.inspect("got unknown message")
+            # IO.inspect("got unknown message")
+            nil
         end
 
         # case stop_reason do
@@ -185,6 +190,12 @@ defmodule Chatgpt.Anthropic do
       {:streamfx, streamhandler}
     ]
 
+    system_msg =
+      case system_msgs do
+        nil -> ""
+        _ -> system_msgs.content
+      end
+
     req = %{
       "contentType" => "application/json",
       # "prompt" => prompt,
@@ -192,11 +203,9 @@ defmodule Chatgpt.Anthropic do
       "max_tokens" => 10000,
       # "stop_sequences" => ["\\n\\nHuman:"],
       "temperature" => 0.8,
-      "messages" => converted_msgs
+      "messages" => converted_msgs,
+      "system" => system_msg
     }
-
-    IO.puts("invoking model with response stream")
-    IO.inspect(req)
 
     spawn(fn ->
       client()

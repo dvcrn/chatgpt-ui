@@ -18,6 +18,13 @@ defmodule Chatgpt.OpenAI2 do
     }
   end
 
+  def convert_message(%Chatgpt.Message{sender: :system} = msg) do
+    %ExOpenAI.Components.ChatCompletionRequestAssistantMessage{
+      content: msg.content,
+      role: :system
+    }
+  end
+
   @spec do_complete([Chatgpt.Messages], String.t(), Chatgpt.LLM.chunk()) ::
           :ok | {:error, String.t()}
   def do_complete(messages, model, callback) do
