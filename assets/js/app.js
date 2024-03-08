@@ -30,6 +30,14 @@ function scrollToBottom() {
 		.scrollTo(0, document.body.scrollHeight);
 }
 
+function scrollToLastChatBubble() {
+	let chatBubbles = document.querySelectorAll(".chat");
+	let lastChatBubble = chatBubbles[chatBubbles.length - 1];
+	if (lastChatBubble) {
+		lastChatBubble.scrollIntoView({ behavior: "smooth", block: "start" });
+	}
+}
+
 let Hooks = {};
 
 let csrfToken = document
@@ -58,5 +66,5 @@ window.liveSocket = liveSocket;
 window.addEventListener(`phx:newmessage`, (e) => {
 	console.log("new message arrived");
 	hljs.highlightAll();
-	scrollToBottom();
+	scrollToLastChatBubble();
 });
