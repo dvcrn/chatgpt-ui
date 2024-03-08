@@ -148,7 +148,8 @@ defmodule Chatgpt.Anthropic do
 
         case decoded_payload do
           %{"message" => %{"content" => completion, "stop_reason" => stop_reason}} ->
-            IO.inspect("got message: #{inspect(completion)}")
+            # IO.inspect("got message: #{inspect(completion)}")
+            nil
 
           # %{
           # 	"delta" => %{"text" => "My", "type" => "text_delta"},
