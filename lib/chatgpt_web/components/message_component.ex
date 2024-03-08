@@ -4,7 +4,7 @@ defmodule ChatgptWeb.MessageComponent do
   defp style(:assistant), do: "chat-start "
   defp style(_), do: "chat-end"
 
-  defp bubble_style(:assistant), do: ""
+  defp bubble_style(:assistant), do: "text-[white]"
   defp bubble_style(_), do: "bg-[#FFF] text-[#333] dark:text-slate-400 dark:bg-gray-700"
 
   defp process_markdown(markdown) do

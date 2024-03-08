@@ -36,6 +36,15 @@ defmodule ChatgptWeb.IndexLive do
       ) do
     {:ok, pid} = Chatgpt.MessageStore.start_link([])
 
+    selected_model =
+      case scenario do
+        %{force_model: force_model_id} ->
+          atom_to_string(force_model_id)
+
+        _ ->
+          model
+      end
+
     {:ok,
      socket
      |> assign(initial_state())
@@ -48,7 +57,7 @@ defmodule ChatgptWeb.IndexLive do
            %Chatgpt.Message{content: scenario.description, sender: :assistant, id: 0}
          ]
          |> fill_random_id(),
-       model: model,
+       model: selected_model,
        models: models,
        active_model: Enum.find(models, &(&1.id == to_atom(model))),
        scenarios: Map.get(session, "scenarios"),

@@ -1,6 +1,10 @@
 {
-  "dependencies": {
-    "daisyui": "^2.51.5",
-    "highlight.js": "^11.7.0"
-  }
+	"dependencies": {
+		"tailwindcss": "^3.4.1"
+	},
+	"devDependencies": {
+		"daisyui": "^4.7.2",
+		"highlight.js": "^11.9.0",
+		"postcss": "^8.4.35"
+	}
 }

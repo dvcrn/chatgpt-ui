@@ -1,5 +1,5 @@
 defmodule ChatgptWeb.Scenario do
-  defstruct [:id, :name, :messages, :description, :keep_context]
+  defstruct [:id, :name, :messages, :description, :keep_context, :force_model]
   # @enforce_keys [:sender, :content]
 
   @type t :: %__MODULE__{
@@ -7,7 +7,8 @@ defmodule ChatgptWeb.Scenario do
           name: String.t(),
           messages: [Chatgpt.Message.t()],
           description: String.t(),
-          keep_context: boolean()
+          keep_context: boolean(),
+          force_model: atom()
         }
 
   @spec default_scenarios() :: [t()]
