@@ -20,6 +20,7 @@ defmodule ChatgptWeb.PageController do
   defp render_page(conn, params, args) do
     default_model = Application.get_env(:chatgpt, :default_model, :"gpt-3.5-turbo")
 
+    # get model from session, or overwrite with model from params
     session_model =
       case get_session(conn) do
         %{"model" => model} ->

@@ -18,8 +18,9 @@ defmodule Chatgpt.OpenAI2 do
     }
   end
 
-  @spec do_complete([Chatgpt.Messages], Chatgpt.LLM.chunk()) :: :ok | {:error, String.t()}
-  def do_complete(messages, callback) do
+  @spec do_complete([Chatgpt.Messages], String.t(), Chatgpt.LLM.chunk()) ::
+          :ok | {:error, String.t()}
+  def do_complete(messages, model, callback) do
     callback = fn
       :finish ->
         IO.puts("Done")
@@ -49,7 +50,7 @@ defmodule Chatgpt.OpenAI2 do
 
     IO.puts("hitting gpt4 now")
 
-    case ExOpenAI.Chat.create_chat_completion(converted_msgs, "gpt-4",
+    case ExOpenAI.Chat.create_chat_completion(converted_msgs, model,
            temperature: 0.8,
            stream: true,
            stream_to: callback

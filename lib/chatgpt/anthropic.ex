@@ -81,8 +81,9 @@ defmodule Chatgpt.Anthropic do
     }
   end
 
-  @spec do_complete([Chatgpt.Messages], Chatgpt.LLM.chunk()) :: :ok | {:error, String.t()}
-  def do_complete(messages, callback) do
+  @spec do_complete([Chatgpt.Messages], String.t(), Chatgpt.LLM.chunk()) ::
+          :ok | {:error, String.t()}
+  def do_complete(messages, model, callback) do
     converted_msgs =
       Enum.map(messages, &convert_message/1)
       |> IO.inspect()
@@ -200,7 +201,7 @@ defmodule Chatgpt.Anthropic do
     spawn(fn ->
       client()
       |> AWS.BedrockRuntime.invoke_model_with_response_stream(
-        "anthropic.claude-3-sonnet-20240229-v1:0",
+        model,
         req,
         opts
       )

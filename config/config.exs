@@ -13,22 +13,16 @@ config :chatgpt,
   default_model: :"gpt-4",
   models: [
     %{
-      id: :"claude-3-opus-20240229",
+      id: :"anthropic.claude-3-sonnet-20240229-v1:0",
       provider: :anthropic,
       truncate_tokens: 100_000,
-      name: "Claude 3 Opus"
+      name: "Claude 3 Sonnet"
     },
     %{
       id: :"gpt-4",
       provider: :openai,
       truncate_tokens: 8000,
       name: "GPT4"
-    },
-    %{
-      id: :"gpt-3.5-turbo",
-      provider: :openai,
-      truncate_tokens: 4000,
-      name: "GPT3.5 Turbo"
     },
     %{
       id: :"gpt-3.5-turbo-16k",
