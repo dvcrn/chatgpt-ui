@@ -1,10 +1,8 @@
 defmodule ChatgptWeb.IndexLive do
-  alias ChatgptWeb.Message
+  alias Chatgpt.Message
   alias ChatgptWeb.LoadingIndicatorComponent
   alias ChatgptWeb.AlertComponent
   use ChatgptWeb, :live_view
-
-  use ExOpenAI.StreamingClient
 
   @type state :: %{messages: [Message.t()], loading: boolean(), streaming_message: Message.t()}
 
@@ -17,10 +15,18 @@ defmodule ChatgptWeb.IndexLive do
   @spec initial_state() :: state
   defp initial_state,
     do: %{
-      messages: dummy_messages(),
+      dummy_messages: dummy_messages() |> fill_random_id(),
+      prepend_messages: [],
+      messages: [],
       loading: false,
       streaming_message: %Message{content: "", sender: :assistant, id: -1}
     }
+
+  defp fill_random_id(messages),
+    do: Enum.map(messages, fn msg -> Map.put(msg, :id, :rand.uniform() |> Float.to_string()) end)
+
+  defp to_atom(s) when is_atom(s), do: s
+  defp to_atom(s) when is_binary(s), do: String.to_atom(s)
 
   def mount(
         _params,
@@ -28,34 +34,41 @@ defmodule ChatgptWeb.IndexLive do
           session,
         socket
       ) do
-    {:ok, pid} =
-      Chatgpt.Openai.start_link(%{
-        messages: scenario.messages,
-        keep_context: Map.get(scenario, "keep_context", false)
-      })
+    {:ok, pid} = Chatgpt.MessageStore.start_link([])
 
     {:ok,
      socket
      |> assign(initial_state())
      |> assign(%{
-       openai_pid: pid,
+       #  openai_pid: pid,
+       message_store_pid: pid,
+       prepend_messages: scenario.messages,
+       dummy_messages:
+         [
+           %Chatgpt.Message{content: scenario.description, sender: :assistant, id: 0}
+         ]
+         |> fill_random_id(),
        model: model,
        models: models,
+       active_model: Enum.find(models, &(&1.id == to_atom(model))),
        scenarios: Map.get(session, "scenarios"),
        scenario: scenario,
-       mode: :scenario,
-       messages: [%ChatgptWeb.Message{content: scenario.description, sender: :assistant, id: 0}]
+       mode: :scenario
      })}
   end
 
   def mount(_params, %{"model" => model, "models" => models} = session, socket) do
-    {:ok, pid} = Chatgpt.Openai.start_link(%{})
+    # {:ok, pid} = Chatgpt.Openai.start_link(%{})
+    {:ok, pid} = Chatgpt.MessageStore.start_link([])
 
     {:ok,
      socket
      |> assign(%{
-       openai_pid: pid,
+       #  openai_pid: pid,
        model: model,
+       message_store_pid: pid,
+       dummy_messages: dummy_messages() |> fill_random_id(),
+       active_model: Enum.find(models, &(&1.id == to_atom(model))),
        models: models,
        scenarios: Map.get(session, "scenarios"),
        mode: :chat
@@ -69,59 +82,6 @@ defmodule ChatgptWeb.IndexLive do
     IO.inspect(params)
     IO.inspect(socket)
   end
-
-  # -- sse client
-
-  @spec parse_choices(any) :: String.t()
-  defp parse_choices(%{text: content}) do
-    content
-  end
-
-  defp parse_choices(%{delta: %{content: content}}) do
-    content
-  end
-
-  defp parse_choices(choices) when is_list(choices) do
-    List.first(choices)
-    |> parse_choices()
-  end
-
-  defp parse_choices(_) do
-    ""
-  end
-
-  def handle_data(%{id: _id, choices: choices}, state) do
-    streamed_text = parse_choices(choices)
-
-    streaming_message =
-      state.assigns.streaming_message
-      |> Map.put(:content, state.assigns.streaming_message.content <> streamed_text)
-
-    {:noreply,
-     state
-     |> assign(streaming_message: streaming_message)}
-  end
-
-  def handle_error(e, state) do
-    IO.puts("got error: #{inspect(e)}")
-    Process.send(self(), {:set_error, "#{inspect(e)}"}, [])
-    Process.send(self(), :stop_loading, [])
-
-    {:noreply, state}
-  end
-
-  def handle_finish(state) do
-    # swap streaming message into a real message
-    Process.send(
-      self(),
-      {:commit_streaming_message, state.assigns.streaming_message},
-      []
-    )
-
-    {:noreply, state}
-  end
-
-  # -- sse client
 
   def handle_info({:set_error, msg}, socket) do
     {:noreply,
@@ -147,19 +107,44 @@ defmodule ChatgptWeb.IndexLive do
      |> push_event("newmessage", %{})}
   end
 
-  def handle_info({:commit_streaming_message, msg}, socket) do
-    new_id = Enum.count(socket.assigns.messages) + 1
-    msg = Map.put(msg, :id, new_id)
+  def handle_info(:sync_messages, socket) do
+    msgs = Chatgpt.MessageStore.get_messages(socket.assigns.message_store_pid)
 
-    # insert into stateful openai container so we have history
-    Chatgpt.Openai.insert_message(socket.assigns.openai_pid, msg)
+    {:noreply,
+     socket
+     |> assign(%{messages: msgs})
+     |> push_event("newmessage", %{})}
+  end
+
+  def handle_info({:handle_stream_chunk, nil}, socket) do
+    {:noreply, socket}
+  end
+
+  def handle_info({:handle_stream_chunk, text}, socket) do
+    streaming_message =
+      socket.assigns.streaming_message
+      |> Map.put(:content, socket.assigns.streaming_message.content <> text)
+
+    {:noreply,
+     socket
+     |> assign(streaming_message: streaming_message)}
+  end
+
+  def handle_info(:commit_streaming_message, socket) do
+    msg = socket.assigns.streaming_message
+
+    Chatgpt.MessageStore.add_message(socket.assigns.message_store_pid, %Chatgpt.Message{
+      content: msg.content,
+      sender: :assistant,
+      id: Chatgpt.MessageStore.get_next_id(socket.assigns.message_store_pid)
+    })
 
     Process.send(self(), :stop_loading, [])
+    Process.send(self(), :sync_messages, [])
 
     {:noreply,
      socket
      |> assign(%{
-       messages: socket.assigns.messages ++ [msg],
        streaming_message: %Message{content: "", sender: :assistant, id: -1}
      })
      |> push_event("newmessage", %{})}
@@ -175,32 +160,50 @@ defmodule ChatgptWeb.IndexLive do
 
   def handle_info({:msg_submit, text}, socket) do
     self = self()
-
     model = Map.get(socket.assigns, :model)
 
-    Process.send(
-      self,
-      {:add_message, %Message{content: text, sender: :user, id: 0}},
-      []
-    )
+    # add new message to messagestore
+    Chatgpt.MessageStore.add_message(socket.assigns.message_store_pid, %Chatgpt.Message{
+      content: text,
+      sender: :user
+    })
 
-    spawn(fn ->
-      case Chatgpt.Openai.send(socket.assigns.openai_pid, text, model, self) do
-        {:ok, result} when is_reference(result) ->
-          nil
+    Process.send(self, :sync_messages, [])
 
-        {:ok, result} ->
-          Process.send(self, {:add_message, result}, [])
-          Process.send(self, :stop_loading, [])
+    handle_chunk_callback = fn
+      # callback for stream finished
+      :finish ->
+        Process.send(self, :commit_streaming_message, [])
 
-        {:error, e} ->
-          IO.puts("error")
-          IO.inspect(e)
+      # callback for delta data
+      {:data, data} ->
+        Process.send(self, {:handle_stream_chunk, data}, [])
 
-          Process.send(self, {:set_error, "#{inspect(e)}"}, [])
-          Process.send(self, :stop_loading, [])
+      {:error, err} ->
+        Process.send(self, {:set_error, "#{inspect(err)}"}, [])
+        Process.send(self, :stop_loading, [])
+    end
+
+    messages =
+      case socket.assigns.mode do
+        :chat ->
+          socket.assigns.prepend_messages ++
+            Chatgpt.MessageStore.get_messages(socket.assigns.message_store_pid)
+
+        :scenario ->
+          case socket.assigns.scenario.keep_context do
+            true ->
+              socket.assigns.prepend_messages ++
+                Chatgpt.MessageStore.get_messages(socket.assigns.message_store_pid)
+
+            false ->
+              socket.assigns.prepend_messages ++
+                Chatgpt.MessageStore.get_recent_messages(socket.assigns.message_store_pid, 1)
+          end
       end
-    end)
+
+    llm = Chatgpt.LLM.get_provider(socket.assigns.active_model.provider)
+    llm.do_complete(messages, model, handle_chunk_callback)
 
     {:noreply, socket |> assign(:loading, true) |> clear_flash()}
   end
@@ -210,27 +213,27 @@ defmodule ChatgptWeb.IndexLive do
     <div id="chatgpt" class="flex" style="height: calc(100vh - 64px); flex-direction: column;">
       <div class="mb-32" style="flex-grow: 1;">
         <div>
-        <.live_component
-          module={ChatgptWeb.MessageListComponent}
-          messages={assigns.messages ++ [assigns.streaming_message]}
-          id="myid"
-        />
+          <.live_component
+            module={ChatgptWeb.MessageListComponent}
+            messages={assigns.dummy_messages ++ assigns.messages ++ [assigns.streaming_message]}
+            id="myid"
+          />
 
-        <%= if Phoenix.Flash.get(@flash, :error) do %>
-          <div class="container mx-auto p-4">
-            <AlertComponent.render text={Phoenix.Flash.get(@flash, :error)} />
-          </div>
-        <% end %>
+          <%= if Phoenix.Flash.get(@flash, :error) do %>
+            <div class="container mx-auto p-4">
+              <AlertComponent.render text={Phoenix.Flash.get(@flash, :error)} />
+            </div>
+          <% end %>
 
-        <%= if true == @loading do %>
-          <div class="container mx-auto p-4">
-            <LoadingIndicatorComponent.render />
-          </div>
-        <% end %>
-    	 </div>
+          <%= if true == @loading do %>
+            <div class="container mx-auto p-4">
+              <LoadingIndicatorComponent.render />
+            </div>
+          <% end %>
+        </div>
       </div>
 
-      <div class="sticky bottom-4 w-full border-t md:border-t-0 dark:border-white/20 md:border-transparent md:dark:border-transparent md:bg-vert-light-gradient bg-white dark:bg-gray-800 md:!bg-transparent dark:md:bg-vert-dark-gradient pt-2" >
+      <div class="sticky bottom-4 w-full border-t md:border-t-0 dark:border-white/20 md:border-transparent md:dark:border-transparent md:bg-vert-light-gradient bg-white dark:bg-gray-800 md:!bg-transparent dark:md:bg-vert-dark-gradient pt-2">
         <.live_component
           on_submit={fn val -> Process.send(self(), {:msg_submit, val}, []) end}
           module={ChatgptWeb.TextboxComponent}
