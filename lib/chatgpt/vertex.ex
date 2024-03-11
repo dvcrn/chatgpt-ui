@@ -4,35 +4,58 @@ defmodule Chatgpt.Vertex do
   # Set the base URL for the Vertex AI API
   @base_url "https://us-central1-aiplatform.googleapis.com"
 
-  # Initialize the client
-  # def new do
-  #   Tesla.client([
-  #     {Tesla.Middleware.BaseUrl, @base_url},
-  #     {Tesla.Middleware.JSON, engine: Jason}
-  #   ])
-  # end
-
   def new do
     Finch.start_link(name: __MODULE__)
   end
 
-  # Make the API request to streamGenerateContent
-  # def stream_generate_content(client, project_id, model_id, contents) do
-  #   with {:ok, %{token: token}} <-
-  #          Goth.Token.for_scope("https://www.googleapis.com/auth/cloud-platform") do
-  #     client
-  #     |> Tesla.post(
-  #       "/v1/projects/#{project_id}/locations/us-central1/publishers/google/models/#{model_id}:streamGenerateContent",
-  #       %{
-  #         "contents" => contents
-  #       },
-  #       headers: [
-  #         {"Authorization", "Bearer #{token}"},
-  #         {"Content-Type", "application/json"}
-  #       ]
-  #     )
-  #   end
-  # end
+  defp convert_message(%Chatgpt.Message{sender: :assistant, content: content}),
+    do: %{
+      "role" => "model",
+      "parts" => %{
+        "text" => content
+      }
+    }
+
+  defp convert_message(%Chatgpt.Message{sender: :user, content: content}),
+    do: %{
+      "role" => "user",
+      "parts" => %{
+        "text" => content
+      }
+    }
+
+  defp convert_message(%Chatgpt.Message{sender: :system, content: content}),
+    do: %{
+      "role" => "user",
+      "parts" => %{
+        "text" => content
+      }
+    }
+
+  def fix_messages(messages) do
+    messages
+    |> Enum.reduce([], fn message, acc ->
+      case {List.last(acc), message} do
+        # Insert assistant between user/system and user messages
+        {%Chatgpt.Message{sender: prev_sender}, %Chatgpt.Message{sender: :user}}
+        when prev_sender in [:user, :system] ->
+          acc ++ [%Chatgpt.Message{sender: :assistant, content: "ok"}, message]
+
+        # Insert assistant between user/system messages if consecutive
+        {%Chatgpt.Message{sender: :assistant}, %Chatgpt.Message{sender: next_sender}}
+        when next_sender in [:user, :system] ->
+          acc ++ [message]
+
+        # Insert user between assistant and assistant messages
+        {%Chatgpt.Message{sender: :assistant}, %Chatgpt.Message{sender: :assistant}} ->
+          acc ++ [%Chatgpt.Message{sender: :user, content: "ok"}, message]
+
+        # Default case: just append the message
+        _ ->
+          acc ++ [message]
+      end
+    end)
+  end
 
   def stream_generate_content(project_id, model_id, contents) do
     with {:ok, %{token: token}} <-
@@ -101,7 +124,7 @@ defmodule Chatgpt.Vertex do
             callback.(:finish)
             nil
 
-          %{"finishReason" => finishReason} ->
+          %{"finishReason" => _finishReason} ->
             callback.(:finish)
 
           %{"content" => %{"parts" => parts}} ->
@@ -124,14 +147,7 @@ defmodule Chatgpt.Vertex do
     project_id = Application.get_env(:chatgpt, :google_cloud_project_id, "")
 
     contents =
-      Enum.map(messages, fn msg ->
-        %{
-          "role" => msg.sender,
-          "parts" => %{
-            "text" => msg.content
-          }
-        }
-      end)
+      messages |> fix_messages() |> Enum.map(&convert_message/1) |> IO.inspect()
 
     spawn(fn ->
       stream_generate_content_streaming(project_id, model, contents, fx)

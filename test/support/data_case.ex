@@ -18,8 +18,6 @@ defmodule Chatgpt.DataCase do
 
   using do
     quote do
-      alias Chatgpt.Repo
-
       import Ecto
       import Ecto.Changeset
       import Ecto.Query
@@ -36,8 +34,8 @@ defmodule Chatgpt.DataCase do
   Sets up the sandbox based on the test tags.
   """
   def setup_sandbox(tags) do
-    pid = Ecto.Adapters.SQL.Sandbox.start_owner!(Chatgpt.Repo, shared: not tags[:async])
-    on_exit(fn -> Ecto.Adapters.SQL.Sandbox.stop_owner(pid) end)
+    # pid = Ecto.Adapters.SQL.Sandbox.start_owner!(Chatgpt.Repo, shared: not tags[:async])
+    # on_exit(fn -> Ecto.Adapters.SQL.Sandbox.stop_owner(pid) end)
   end
 
   @doc """
