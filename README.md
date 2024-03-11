@@ -1,22 +1,16 @@
 # ChatGPT UI
 
-ChatGPT to host yourself, targeted at business-ey usecases that may be useful within a company, written in Elixir + LiveView
+ChatGPT (or Claude / Gemini Pro) to host yourself, targeted at business-ey usecases that may be useful within a company, written in Elixir + LiveView
 
 ![screenshot](screenshot.png)
 
 ## What is this?
 
-The goal is to create a simple ChatGPT UI that uses the OpenAI APIs directly, for you and your company to self-host.
-
-### Why?
-
-According to the [OpenAI API Usage Policy](https://openai.com/policies/api-data-usage-policies), data from ChatGPT usage will be used to train their models. Usage of the API however, will not.
-
-Some companies want to offer ChatGPT internally to their employees, but without having company data end up in the training set.
+The goal is to create a simple ChatGPT UI, for you and your company to self-host.
 
 ## Features
 
-- Support for OpenAI GPT4 and Anthropic Claude models (through bedrock)
+- Support for OpenAI GPT4, Google Gemini (through Vertex) and Anthropic Claude models (through bedrock)
 - "Scenarios" for repetitive tasks you find yourself doing a lot
 - Use your own OpenAI API key
 - Google OAuth authentication
@@ -42,9 +36,15 @@ config :chatgpt,
   models: [
     %{
       id: :"anthropic.claude-3-sonnet-20240229-v1:0",
-      provider: :anthropic,
+      provider: :anthropic,  # <- provider can only be :anthropic, :google or :openai currently
       truncate_tokens: 100_000,
       name: "Claude 3 Sonnet"
+    },
+		%{
+      id: :"gemini-1.0-pro",
+      provider: :google,
+      truncate_tokens: 100_000,
+      name: "Gemini Pro (Google)"
     },
     %{
       id: :"gpt-4",
@@ -91,6 +91,25 @@ config :chatgpt,
   region: System.get_env("AWS_REGION")
 ```
 
+To enable google vertex, set the `GOOGLE_APPLICATION_CREDENTIALS_JSON` env variable with the content of your service account credentials. You can also set `GOOGLE_APPLICATION_CREDENTIALS` to the filepath of your service account json file, or use service account based auth when using GKE/GAE.
+
+```
+export GOOGLE_APPLICATION_CREDENTIALS_JSON='{xxxxx}'
+```
+
+### On Claude support
+
+To enable Anthropic Claude models, you need to go to AWS Bedrock and request model access for the Claude models.
+
+Then generate a new access key pair to use for authentication
+
+### On Gemini Pro support
+
+To enable Google's Gemini models, you need to enable the Vertex APIs in the google cloud console.
+
+If you need to generate a service account credentials json, go into IAM settings, create a new service account, then generate a new key. Important here is that you provide the service account with Vertex permissions.
+
+
 
 ## Scenarios
 
@@ -113,6 +132,7 @@ Currently, scenarios are set in `scenario.ex` and follow the `%ChatgptWeb.Scenar
         name: "📗 Generate Userstory",
         description:
           "Give me the content of a ticket, and I will try to write a user story for you!",
+        force_model: :"anthropic.claude-3-sonnet-20240229-v1:0", # optional, if you want a specific scenario to always go through a specific model. Model has to be in `models` config
         messages: [
           %ChatgptWeb.Message{
             content:
@@ -124,7 +144,7 @@ Currently, scenarios are set in `scenario.ex` and follow the `%ChatgptWeb.Scenar
       }
 ```
 
-- messages are instructions to send to ChatGPT when the scenario is loaded, typically instructing the AI what it should do. Use `:system` messages to provide admin commands. The 3.5-turbo model is not paying so much attention to system messages, so experiment with using `:user` instead.
+- messages are instructions to send to the LLM when the scenario is loaded, typically instructing the AI what it should do. Use `:system` messages to provide admin commands. The 3.5-turbo model is not paying so much attention to system messages, so experiment with using `:user` instead.
 - `keep_context` specifies whether the conversation context should be kept. If this is set to false (recommended), each message that is sent to the AI will be treated as a new conversation, the AI will have no context on previously sent messages.
 
 ## Usage
@@ -169,10 +189,20 @@ The container (by default) expects the following env vars (unless you changed it
 - OPENAI_API_KEY
 - OPENAI_ORGANIZATION_KEY
 
-And if you use google:
+And if you use google oauth:
 
 - GOOGLE_AUTH_CLIENT_ID
 - GOOGLE_AUTH_CLIENT_SECRET
+
+And if you use Anthropic through Bedrock
+- AWS_ACCESS_KEY_ID
+- AWS_REGION
+- AWS_SECRET_ACCESS_KEY
+
+And if you use Google Vertex
+
+- GOOGLE_CLOUD_PROJECT_ID
+- GOOGLE_APPLICATION_CREDENTIALS_JSON
 
 ## Status
 
