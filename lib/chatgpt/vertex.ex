@@ -147,7 +147,7 @@ defmodule Chatgpt.Vertex do
     project_id = Application.get_env(:chatgpt, :google_cloud_project_id, "")
 
     contents =
-      messages |> fix_messages() |> Enum.map(&convert_message/1) |> IO.inspect()
+      messages |> fix_messages() |> Enum.map(&convert_message/1)
 
     spawn(fn ->
       stream_generate_content_streaming(project_id, model, contents, fx)
