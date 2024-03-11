@@ -9,7 +9,10 @@ defmodule Chatgpt.LLM do
             ) ::
               {:ok, Chatgpt.Message} | {:error, String.t()}
 
+  @spec get_provider(:anthropic | :google | :openai) ::
+          Chatgpt.Anthropic | Chatgpt.OpenAI2 | Chatgpt.Vertex
   def get_provider(:anthropic), do: Chatgpt.Anthropic
   def get_provider(:openai), do: Chatgpt.OpenAI2
+  def get_provider(:google), do: Chatgpt.Vertex
   def get_provider(_), do: raise("Unknown provider")
 end

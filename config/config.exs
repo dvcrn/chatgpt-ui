@@ -16,25 +16,31 @@ config :chatgpt,
       id: :"anthropic.claude-3-sonnet-20240229-v1:0",
       provider: :anthropic,
       truncate_tokens: 100_000,
-      name: "Claude 3 Sonnet"
+      name: "Claude 3 Sonnet (Anthropic)"
+    },
+    %{
+      id: :"gemini-1.0-pro",
+      provider: :google,
+      truncate_tokens: 100_000,
+      name: "Gemini Pro (Google)"
     },
     %{
       id: :"gpt-4",
       provider: :openai,
       truncate_tokens: 8000,
-      name: "GPT4"
+      name: "GPT4 (OpenAI)"
     },
     %{
       id: :"gpt-3.5-turbo-16k",
       provider: :openai,
       truncate_tokens: 15000,
-      name: "GPT3.5 Turbo 16k"
+      name: "GPT3.5 Turbo 16k (OpenAI)"
     },
     %{
       id: :"gpt-4-32k",
       provider: :openai,
       truncate_tokens: 30000,
-      name: "GPT4 32k (EXPENSIVE!)"
+      name: "GPT4 32k (EXPENSIVE!) (OpenAI)"
     }
   ],
   enable_google_oauth: true,

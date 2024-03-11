@@ -50,12 +50,7 @@ defmodule Chatgpt.OpenAI2 do
         callback.({:error, err})
     end
 
-    IO.inspect(messages)
     converted_msgs = Enum.map(messages, &convert_message/1)
-
-    IO.inspect(converted_msgs)
-
-    IO.puts("hitting gpt4 now")
 
     case ExOpenAI.Chat.create_chat_completion(converted_msgs, model,
            temperature: 0.8,
@@ -63,7 +58,6 @@ defmodule Chatgpt.OpenAI2 do
            stream_to: callback
          ) do
       {:ok, reference} ->
-        IO.puts("chat_complete: #{inspect(reference)}")
         {:ok, reference}
 
       {:error, err} ->

@@ -28,6 +28,9 @@ defmodule ChatgptWeb.IndexLive do
   defp to_atom(s) when is_atom(s), do: s
   defp to_atom(s) when is_binary(s), do: String.to_atom(s)
 
+  defp atom_to_string(s) when is_atom(s), do: Atom.to_string(s)
+  defp atom_to_string(s) when is_binary(s), do: s
+
   def mount(
         _params,
         %{"model" => model, "models" => models, "mode" => :scenario, "scenario" => scenario} =
@@ -59,7 +62,7 @@ defmodule ChatgptWeb.IndexLive do
          |> fill_random_id(),
        model: selected_model,
        models: models,
-       active_model: Enum.find(models, &(&1.id == to_atom(model))),
+       active_model: Enum.find(models, &(&1.id == to_atom(selected_model))),
        scenarios: Map.get(session, "scenarios"),
        scenario: scenario,
        mode: :scenario
@@ -219,7 +222,11 @@ defmodule ChatgptWeb.IndexLive do
 
   def render(assigns) do
     ~H"""
-    <div id="chatgpt" class="flex" style="height: calc(100vh - 64px); flex-direction: column;">
+    <div
+      id="chatgpt"
+      class="flex overflow-scroll"
+      style="height: calc(100vh - 64px); flex-direction: column;"
+    >
       <div class="mb-32" style="flex-grow: 1;">
         <div>
           <.live_component

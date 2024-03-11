@@ -63,11 +63,15 @@ defmodule Chatgpt.MixProject do
       {:httpoison, "~> 2.0.0", override: true},
       {:cachex, "~> 3.6"},
       {:elixir_uuid, "~> 1.2"},
-      {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
       {:tokenizers, "~> 0.3.0"},
       {:aws, git: "https://github.com/aws-beam/aws-elixir.git"},
       {:hackney, "~> 1.18"},
-      {:finch, "~> 0.13.0"}
+      {:finch, "~> 0.13.0"},
+			{:tesla, "~> 1.4"},
+      {:goth, "~> 1.3.0"},
+
+			{:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+			{:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
     ]
   end
 

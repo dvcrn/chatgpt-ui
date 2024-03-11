@@ -34,7 +34,8 @@ config :elixir_auth_google,
 config :chatgpt,
   access_key_id: System.get_env("AWS_ACCESS_KEY_ID"),
   secret_access_key: System.get_env("AWS_SECRET_ACCESS_KEY"),
-  region: System.get_env("AWS_REGION")
+  region: System.get_env("AWS_REGION"),
+  google_cloud_project_id: System.get_env("GOOGLE_CLOUD_PROJECT_ID")
 
 if config_env() == :prod do
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
