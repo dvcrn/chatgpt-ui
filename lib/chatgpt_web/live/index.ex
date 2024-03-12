@@ -170,8 +170,21 @@ defmodule ChatgptWeb.IndexLive do
     {:noreply, assign(socket, %{loading: false})}
   end
 
-  def handle_info({:msg_submit, text}, socket) do
+  def handle_info(:start_loading, socket) do
+    {:noreply, assign(socket, %{loading: true})}
+  end
+
+  # message when loading should not get processed
+  def handle_info({:msg_submit, text}, %{assigns: %{loading: true}} = socket) do
+    {:noreply, socket}
+  end
+
+  def handle_info({:msg_submit, text}, %{assigns: %{loading: false}} = socket) do
     self = self()
+
+    Process.send(self, :start_loading, [])
+    Process.send(self, :sync_messages, [])
+
     model = Map.get(socket.assigns, :model)
 
     # add new message to messagestore
