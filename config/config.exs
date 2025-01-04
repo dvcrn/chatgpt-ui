@@ -18,12 +18,12 @@ config :chatgpt,
       truncate_tokens: 100_000,
       name: "Claude 3 Sonnet (Anthropic)"
     },
-    %{
-      id: :"gemini-1.0-pro",
-      provider: :google,
-      truncate_tokens: 100_000,
-      name: "Gemini Pro (Google)"
-    },
+    # %{
+    #   id: :"gemini-1.0-pro",
+    #   provider: :google,
+    #   truncate_tokens: 100_000,
+    #   name: "Gemini Pro (Google)"
+    # },
     %{
       id: :"gpt-4",
       provider: :openai,

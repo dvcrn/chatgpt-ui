@@ -5,6 +5,8 @@ defmodule Chatgpt.Application do
 
   use Application
 
+  require Logger
+
   @impl true
   def start(_type, _args) do
     children = [
@@ -18,9 +20,23 @@ defmodule Chatgpt.Application do
       ChatgptWeb.Endpoint,
       # Start a worker by calling: Chatgpt.Worker.start_link(arg)
       # {Chatgpt.Worker, arg},
-      Chatgpt.Tokenizer,
-			{Goth, name: Chatgpt.Goth}
+      Chatgpt.Tokenizer
     ]
+
+    gcp_children = [
+      {Goth, name: Chatgpt.Goth}
+    ]
+
+    children =
+      if Enum.any?(Application.get_env(:chatgpt, :models, []), &(&1.provider == :google)) do
+        Logger.warn(
+          "Using Google Cloud Platform (through goth) as :google provider has been detected"
+        )
+
+        children ++ gcp_children
+      else
+        children
+      end
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
